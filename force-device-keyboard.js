@@ -1,4 +1,4 @@
-(function () {
+;(function () {
 	'use strict';
-	window.localStorage.keyboard_type = 'integrate'
+	console.log('hello world');
 })();
