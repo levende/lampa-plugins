@@ -5,11 +5,11 @@ Welcome to the repository! This repository contains a collection of plugins desi
 ## Available Plugins
 
 ### 1. **Bookmarks Sync Plugin**
-- **[Link](https://levende.github.io/lampa-plugins/bookmarks-sync.js)**
-- **[Description](https://levende.github.io/lampa-plugins/docs/bookmarks-sync.md)**
+- **[https://levende.github.io/lampa-plugins/bookmarks-sync.js](https://levende.github.io/lampa-plugins/bookmarks-sync.js)**
+- **[Description](https://levende.github.io/lampa-plugins/bookmarks-sync.md)**
 
 ### 2. **Profiles Plugin**
-- **[Link](https://levende.github.io/lampa-plugins/profiles.js)**
-- **[Description](https://levende.github.io/lampa-plugins/docs/profiles.md)**
+- **[https://levende.github.io/lampa-plugins/profiles.js](https://levende.github.io/lampa-plugins/profiles.js)**
+- **[Description](https://levende.github.io/lampa-plugins/profiles.md)**
 
 *Note: Please ensure you follow the installation instructions carefully and review the plugin description for any important details before use.*
