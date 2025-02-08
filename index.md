@@ -6,10 +6,10 @@ Welcome to the page! This page contains a collection of plugins designed to enha
 
 ### 1. **Bookmarks Sync Plugin**
 - **[https://levende.github.io/lampa-plugins/bookmarks-sync.js](https://levende.github.io/lampa-plugins/bookmarks-sync.js)**
-- **[Description](https://levende.github.io/lampa-plugins/bookmarks-sync.md)**
+- **[Description](https://levende.github.io/lampa-plugins/bookmarks-sync)**
 
 ### 2. **Profiles Plugin**
 - **[https://levende.github.io/lampa-plugins/profiles.js](https://levende.github.io/lampa-plugins/profiles.js)**
-- **[Description](https://levende.github.io/lampa-plugins/profiles.md)**
+- **[Description](https://levende.github.io/lampa-plugins/profiles)**
 
 *Note: Please ensure you follow the installation instructions carefully and review the plugin description for any important details before use.*
