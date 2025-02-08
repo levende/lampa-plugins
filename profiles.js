@@ -129,7 +129,7 @@
                             interceptor.destroy();
                             Lampa.Loading.stop();
 
-                            if (Lampa.Storage.get('lampac_profile_upt_type', 'full') == 'hard') {
+                            if (Lampa.Storage.get('lampac_profile_upt_type', 'full') == 'full') {
                                 window.location.reload();
                                 return;
                             }
