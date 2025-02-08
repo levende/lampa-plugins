@@ -34,8 +34,19 @@
                     return;
                 }
 
+                Lampa.Listener.follow('activity', function (e) {
+                    var softRefresh = Lampa.Storage.get('lampac_profile_upt_type', 'full') == 'soft';
+
+                    if (softRefresh && e.type == 'archive' && e.object && e.object.needRefresh && !!e.object.activity) {
+                        e.object.needRefresh = false;
+                        e.object.activity.needRefresh();
+                        e.object.activity.canRefresh();
+                    }
+                });
+
                 var profile = initDefaultState();
                 addProfileButton(profile);
+                addSettings();
             }
         });
     }
@@ -118,7 +129,16 @@
                             interceptor.destroy();
                             Lampa.Loading.stop();
 
+                            if (Lampa.Storage.get('lampac_profile_upt_type', 'full') == 'hard') {
+                                window.location.reload();
+                                return;
+                            }
+
                             var currentActivity = Lampa.Activity.active().activity;
+                            Lampa.Activity.all().forEach(function(page) {
+                                page.needRefresh = page.activity != currentActivity;
+                            });
+                            
                             currentActivity.needRefresh();
                             if (!currentActivity.canRefresh()) {
                                 Lampa.Activity.push({
@@ -155,6 +175,68 @@
                 }
             });
         });
+    }
+
+    function addLocalization() {
+        Lampa.Lang.add({
+            lampac_profile_upt_type: {
+                en: 'Refresh type',
+                uk: 'Тип оновлення',
+                ru: 'Тип обновления',
+            },
+            lampac_profile_upt_type_descr: {
+                en: 'Refresh type after profile switch',
+                uk: 'Тип оновлення після зміни профілю',
+                ru: 'Тип обновления после смены профиля',
+            },
+            lampac_profile_soft_refresh: {
+                en: 'Soft refresh',
+                uk: 'М’яке оновлення',
+                ru: 'Мягкое обновление',
+            },
+            lampac_profile_full_refresh: {
+                en: 'Full refresh',
+                uk: 'Повне оновлення',
+                ru: 'Полное обновление',
+            },
+        });
+    }
+
+    function addSettings() {
+        addLocalization();
+
+        Lampa.SettingsApi.addComponent({
+            component: 'lampac_profiles',
+            name: Lampa.Lang.translate('account_profiles'),
+            icon: `
+            <?xml version="1.0" encoding="utf-8"?>
+                <svg viewBox="0 0 23 23" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12.12 12.78C12.05 12.77 11.96 12.77 11.88 12.78C10.12 12.72 8.71997 11.28 8.71997 9.50998C8.71997 7.69998 10.18 6.22998 12 6.22998C13.81 6.22998 15.28 7.69998 15.28 9.50998C15.27 11.28 13.88 12.72 12.12 12.78Z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M18.74 19.3801C16.96 21.0101 14.6 22.0001 12 22.0001C9.40001 22.0001 7.04001 21.0101 5.26001 19.3801C5.36001 18.4401 5.96001 17.5201 7.03001 16.8001C9.77001 14.9801 14.25 14.9801 16.97 16.8001C18.04 17.5201 18.64 18.4401 18.74 19.3801Z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>`
+        });
+
+        Lampa.SettingsApi.addParam({
+            component: 'lampac_profiles',
+            param: {
+                name: 'lampac_profile_upt_type',
+                type: 'select',
+                values: {
+                    full: Lampa.Lang.translate('lampac_profile_full_refresh'),
+                    soft: Lampa.Lang.translate('lampac_profile_soft_refresh'),
+                },
+                    default: 'full'
+                },
+                field: {
+                    name: Lampa.Lang.translate('lampac_profile_upt_type'),
+                    description: Lampa.Lang.translate('lampac_profile_upt_type_descr'),
+                },
+                onChange: function(value) {
+                    Lampa.Storage.set('lampac_profile_upt_type', value);
+                }
+            }
+        )
     }
 
     function getProfiles(reqinfo) {
