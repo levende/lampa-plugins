@@ -303,6 +303,11 @@
     }
 
     function addAuthParams(url) {
+        url = url + '';
+        if (url.indexOf('account_email=') == -1) {
+            var email = Lampa.Storage.get('account_email');
+            if (email) url = Lampa.Utils.addUrlComponent(url, 'account_email=' + encodeURIComponent(email));
+        }
         if (url.indexOf('uid=') == -1) {
             var uid = Lampa.Storage.get('lampac_unic_id', '');
             if (uid) url = Lampa.Utils.addUrlComponent(url, 'uid=' + encodeURIComponent(uid));
