@@ -47,7 +47,7 @@
                         && Lampa.Storage.get('lampac_profile_upt_type', 'soft') == 'soft'
                     ) {
                         e.object.needRefresh = false;
-                        softRefresh(e.object.activity);
+                        softRefresh(e.object);
                     }
                 });
 
@@ -123,12 +123,13 @@
                                 return;
                             }
 
-                            var currentActivity = Lampa.Activity.active().activity;
+                            var activePage = Lampa.Activity.active();
+                            var currentActivity = activePage.activity;
                             Lampa.Activity.all().forEach(function (page) {
                                 page.needRefresh = page.activity != currentActivity;
                             });
 
-                            softRefresh(currentActivity);
+                            softRefresh(activePage);
                         };
 
                         data.userProfiles.find(function (profile) {
@@ -254,8 +255,14 @@
         }
     }
 
-    function softRefresh(activity) {
+    function softRefresh(page) {
+        var activity = page.activity;
         activity.needRefresh();
+
+        if (isNumber(page.page)) {
+            page.page = 1;
+        }
+
         if (!activity.canRefresh()) {
             Lampa.Noty.show(Lang.translate('lampac_profile_refresh_err'));
             setTimeout(function () { location.reload(); }, 2000);
@@ -301,6 +308,10 @@
             if (uid) url = Lampa.Utils.addUrlComponent(url, 'uid=' + encodeURIComponent(uid));
         }
         return url;
+    }
+
+    function isNumber(value) {
+        return typeof value === 'number' && !isNaN(value);
     }
 
     function EventInterceptor(listener) {

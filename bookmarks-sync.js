@@ -19,7 +19,7 @@
         }
         bookmarks.sort(function (a, b) {
             return a.type > b.type ? 1 : -1;
-        }).reverse();
+        });
 
         var history = [];
         for (var j = 0; j < cubBookmarksResponse.bookmarks.length; j++) {
@@ -189,7 +189,7 @@
             </g>
             </svg>`
         });
-    
+
         Lampa.SettingsApi.addParam({
             component: 'bookmarks_sync',
             param: {
