@@ -17,11 +17,16 @@
             return;
         }
 
-        var cubAccount = Lampa.Storage.get('account', '');
-        if (cubAccount && cubAccount.token) {
+        if (cubSyncEnabled()) {
             console.error('profiles.js: CUB account is used');
             return;
         }
+
+        Lampa.Storage.listener.follow('change', function (event) {
+            if (event.name == 'account' || event.name == 'account_use' && cubSyncEnabled()) {
+                location.reload();
+            }
+        });
 
         data.syncProfileId = Lampa.Storage.get('lampac_profile_id', '');
 
@@ -35,17 +40,19 @@
                 }
 
                 Lampa.Listener.follow('activity', function (e) {
-                    var softRefresh = Lampa.Storage.get('lampac_profile_upt_type', 'full') == 'soft';
-
-                    if (softRefresh && e.type == 'archive' && e.object && e.object.needRefresh && !!e.object.activity) {
+                    if (e.type == 'archive'
+                        && e.object
+                        && e.object.needRefresh
+                        && !!e.object.activity
+                        && Lampa.Storage.get('lampac_profile_upt_type', 'soft') == 'soft'
+                    ) {
                         e.object.needRefresh = false;
-                        e.object.activity.needRefresh();
-                        e.object.activity.canRefresh();
+                        softRefresh(e.object.activity);
                     }
                 });
 
                 var profile = initDefaultState();
-                addProfileButton(profile);
+                replaceProfileButton(profile);
                 addSettings();
             }
         });
@@ -70,33 +77,15 @@
         return profile;
     }
 
-    function addProfileButton(profile) {
-        var style = `
-            .head__action.open--user_profile {
-                padding: 0.1em;
-            }
-            .head__action.open--user_profile img {
-                -webkit-border-radius: 100%;
-                -moz-border-radius: 100%;
-                border-radius: 100%;
-                width: 2.4em;
-                height: 2.4em;
-            }
-        `;
-
-        var styleSheet = document.createElement("style");
-        styleSheet.type = "text/css";
-        styleSheet.innerText = style;
-        document.head.appendChild(styleSheet);
-
-        var profileButton =
-            '<div class="head__action selector open--user_profile">' +
+    function replaceProfileButton(profile) {
+        var profileButton = $(
+            '<div class="head__action selector open--profile">' +
             '<img id="user_profile_icon" src="' + profile.icon + '"/>' +
-            '</div>';
+            '</div>');
 
-        $('#app > div.head > div > div.head__actions').append(profileButton);
+        $('.open--profile').before(profileButton).remove();;
 
-        $('.open--user_profile').on('hover:enter hover:click hover:touch', function () {
+        profileButton.on('hover:enter hover:click hover:touch', function () {
             Lampa.Select.show({
                 title: Lampa.Lang.translate('account_profiles'),
                 nomark: false,
@@ -129,26 +118,17 @@
                             interceptor.destroy();
                             Lampa.Loading.stop();
 
-                            if (Lampa.Storage.get('lampac_profile_upt_type', 'full') == 'full') {
+                            if (Lampa.Storage.get('lampac_profile_upt_type', 'soft') == 'full') {
                                 window.location.reload();
                                 return;
                             }
 
                             var currentActivity = Lampa.Activity.active().activity;
-                            Lampa.Activity.all().forEach(function(page) {
+                            Lampa.Activity.all().forEach(function (page) {
                                 page.needRefresh = page.activity != currentActivity;
                             });
-                            
-                            currentActivity.needRefresh();
-                            if (!currentActivity.canRefresh()) {
-                                Lampa.Activity.push({
-                                    url: '',
-                                    title: Lampa.Lang.translate('title_main') + ' - ' + Lampa.Storage.field('source').toUpperCase(),
-                                    component: 'main',
-                                    source: Lampa.Storage.field('source'),
-                                    page: 1,
-                                });
-                            }
+
+                            softRefresh(currentActivity);
                         };
 
                         data.userProfiles.find(function (profile) {
@@ -199,6 +179,11 @@
                 uk: 'Повне оновлення',
                 ru: 'Полное обновление',
             },
+            lampac_profile_refresh_err: {
+                en: 'Something went wrong. The page will be reloaded.',
+                uk: 'Щось пішло не так. Сторінка буде перезавантажена.',
+                ru: 'Что-то пошло не так. Страница будет перезагружена.',
+            }
         });
     }
 
@@ -226,16 +211,16 @@
                     full: Lampa.Lang.translate('lampac_profile_full_refresh'),
                     soft: Lampa.Lang.translate('lampac_profile_soft_refresh'),
                 },
-                    default: 'full'
-                },
-                field: {
-                    name: Lampa.Lang.translate('lampac_profile_upt_type'),
-                    description: Lampa.Lang.translate('lampac_profile_upt_type_descr'),
-                },
-                onChange: function(value) {
-                    Lampa.Storage.set('lampac_profile_upt_type', value);
-                }
+                default: 'soft'
+            },
+            field: {
+                name: Lampa.Lang.translate('lampac_profile_upt_type'),
+                description: Lampa.Lang.translate('lampac_profile_upt_type_descr'),
+            },
+            onChange: function (value) {
+                Lampa.Storage.set('lampac_profile_upt_type', value);
             }
+        }
         )
     }
 
@@ -269,6 +254,14 @@
         }
     }
 
+    function softRefresh(activity) {
+        activity.needRefresh();
+        if (!activity.canRefresh()) {
+            Lampa.Noty.show(Lang.translate('lampac_profile_refresh_err'));
+            setTimeout(function () { location.reload(); }, 2000);
+        }
+    }
+
     function clearProfileData() {
         syncConfig.syncKeys.forEach(localStorage.removeItem.bind(localStorage));
         Object.keys(Lampa.Favorite.full()).forEach(Lampa.Favorite.clear.bind(Lampa.Favorite));
@@ -276,6 +269,10 @@
         syncConfig.syncTimestamps.forEach(function (timestamp) {
             Lampa.Storage.set(timestamp, 0);
         });
+    }
+
+    function cubSyncEnabled() {
+        return Lampa.Storage.get('account', '{}').token && Lampa.Storage.get('account_use', false);
     }
 
     function alreadySyncUsed() {
