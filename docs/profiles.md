@@ -48,6 +48,6 @@ To enable and configure profiles in Lampac, you need to make adjustments to the 
 ---
 
 ## Other Plugins
-Other available plugins can be found using the following link:  [All plugins](https://levende.github.io/lampa-plugins)
+Other available plugins can be found using the following link: [All plugins](https://levende.github.io/lampa-plugins)
 
 ---

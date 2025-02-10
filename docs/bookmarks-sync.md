@@ -12,6 +12,10 @@
 You can install the plugin using the following link:  
 [bookmarks-sync.js](https://levende.github.io/lampa-plugins/bookmarks-sync.js)
 
+
+---
+
 ## Other Plugins
-Other available plugins can be found using the following link:  
-[All plugins](https://levende.github.io/lampa-plugins)
+Other available plugins can be found using the following link: [All plugins](https://levende.github.io/lampa-plugins)
+
+---
