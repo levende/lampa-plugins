@@ -22,7 +22,7 @@
             return;
         }
 
-        Lampa.Storage.listener.follow('change', function (event) {
+        Lampa.Storage.listener.follow('change', function(event) {
             if (event.name == 'account' || event.name == 'account_use' && cubSyncEnabled()) {
                 location.reload();
             }
@@ -41,13 +41,10 @@
 
                 Lampa.Listener.follow('activity', function (e) {
                     if (e.type == 'archive'
-                        && e.object
-                        && e.object.needRefresh
-                        && !!e.object.activity
+                        && e.object.outdated
                         && Lampa.Storage.get('lampac_profile_upt_type', 'soft') == 'soft'
                     ) {
-                        e.object.needRefresh = false;
-                        softRefresh(e.object);
+                        softRefresh();
                     }
                 });
 
@@ -80,16 +77,16 @@
     function replaceProfileButton(profile) {
         var profileButton = $(
             '<div class="head__action selector open--profile">' +
-            '<img id="user_profile_icon" src="' + profile.icon + '"/>' +
+                '<img id="user_profile_icon" src="' + profile.icon + '"/>' +
             '</div>');
 
         $('.open--profile').before(profileButton).remove();;
 
-        profileButton.on('hover:enter hover:click hover:touch', function () {
+        profileButton.on('hover:enter hover:click hover:touch', function() {
             Lampa.Select.show({
                 title: Lampa.Lang.translate('account_profiles'),
                 nomark: false,
-                items: data.userProfiles.map(function (profile) {
+                items: data.userProfiles.map(function(profile) {
                     return {
                         title: profile.title,
                         template: 'selectbox_icon',
@@ -101,35 +98,31 @@
                 onSelect: function (item) {
                     if (item.profile.id != data.syncProfileId) {
                         Lampa.Loading.start();
-                        var syncedTimestamps = [];
                         var interceptor = new EventInterceptor(Lampa.Storage.listener);
 
                         interceptor.onEvent = function (event, data) {
                             console.debug('profiles.json: intercepted event', { event, data });
 
                             var syncedStorageField = event == 'change'
-                                && syncConfig.syncTimestamps.includes(data.name)
+                                && data.name == 'lampac_sync_favorite'
                                 && data.value > 0;
 
                             if (!syncedStorageField) return;
-                            syncedTimestamps.push(data.name);
-                            if (syncConfig.syncTimestamps.length != syncedTimestamps.length) return;
-
-                            interceptor.destroy();
-                            Lampa.Loading.stop();
 
                             if (Lampa.Storage.get('lampac_profile_upt_type', 'soft') == 'full') {
                                 window.location.reload();
                                 return;
                             }
 
-                            var activePage = Lampa.Activity.active();
-                            var currentActivity = activePage.activity;
-                            Lampa.Activity.all().forEach(function (page) {
-                                page.needRefresh = page.activity != currentActivity;
-                            });
+                            interceptor.destroy();
+                            Lampa.Loading.stop();
 
-                            softRefresh(activePage);
+                            var currentActivity = Lampa.Activity.active().activity;
+                            Lampa.Activity.all().forEach(function(page) {
+                                page.outdated = page.activity != currentActivity;
+                            });
+                            
+                            softRefresh();
                         };
 
                         data.userProfiles.find(function (profile) {
@@ -212,16 +205,16 @@
                     full: Lampa.Lang.translate('lampac_profile_full_refresh'),
                     soft: Lampa.Lang.translate('lampac_profile_soft_refresh'),
                 },
-                default: 'soft'
-            },
-            field: {
-                name: Lampa.Lang.translate('lampac_profile_upt_type'),
-                description: Lampa.Lang.translate('lampac_profile_upt_type_descr'),
-            },
-            onChange: function (value) {
-                Lampa.Storage.set('lampac_profile_upt_type', value);
+                    default: 'soft'
+                },
+                field: {
+                    name: Lampa.Lang.translate('lampac_profile_upt_type'),
+                    description: Lampa.Lang.translate('lampac_profile_upt_type_descr'),
+                },
+                onChange: function(value) {
+                    Lampa.Storage.set('lampac_profile_upt_type', value);
+                }
             }
-        }
         )
     }
 
@@ -254,20 +247,16 @@
             return value != undefined && value != null;
         }
     }
+    
+    function softRefresh() {
+        var activity = Lampa.Activity.active();
+        var object = Lampa.Activity.extractObject(activity);
+        object.page = 1;
 
-    function softRefresh(page) {
-        var activity = page.activity;
-        activity.needRefresh();
-
-        if (isNumber(page.page)) {
-            page.page = 1;
-        }
-
-        if (!activity.canRefresh()) {
-            Lampa.Noty.show(Lang.translate('lampac_profile_refresh_err'));
-            setTimeout(function () { location.reload(); }, 2000);
-        }
+        Lampa.Activity.replace(object);
+        activity.outdated = false;
     }
+
 
     function clearProfileData() {
         syncConfig.syncKeys.forEach(localStorage.removeItem.bind(localStorage));
@@ -279,7 +268,7 @@
     }
 
     function cubSyncEnabled() {
-        return Lampa.Storage.get('account', '{}').token && Lampa.Storage.get('account_use', false);
+        return !!Lampa.Storage.get('account', '{}').token && Lampa.Storage.get('account_use', false);
     }
 
     function alreadySyncUsed() {
@@ -315,10 +304,6 @@
         return url;
     }
 
-    function isNumber(value) {
-        return typeof value === 'number' && !isNaN(value);
-    }
-
     function EventInterceptor(listener) {
         var self = this;
         var originalSend = listener.send;
@@ -328,6 +313,8 @@
         listener.send = function (event, data) {
             if (typeof self.onEvent == 'function') {
                 self.onEvent(event, data);
+            } else {
+                originalSend(event, data);
             }
         };
 
