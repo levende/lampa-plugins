@@ -172,11 +172,6 @@
                 en: 'Full refresh',
                 uk: 'Повне оновлення',
                 ru: 'Полное обновление',
-            },
-            lampac_profile_refresh_err: {
-                en: 'Something went wrong. The page will be reloaded.',
-                uk: 'Щось пішло не так. Сторінка буде перезавантажена.',
-                ru: 'Что-то пошло не так. Страница будет перезагружена.',
             }
         });
     }
@@ -261,6 +256,8 @@
     function clearProfileData() {
         syncConfig.syncKeys.forEach(localStorage.removeItem.bind(localStorage));
         Object.keys(Lampa.Favorite.full()).forEach(Lampa.Favorite.clear.bind(Lampa.Favorite));
+
+        Lampa.Storage.set('favorite', {});
 
         syncConfig.syncTimestamps.forEach(function (timestamp) {
             Lampa.Storage.set(timestamp, 0);
