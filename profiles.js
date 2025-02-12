@@ -1,62 +1,64 @@
-(function () {
+(function() {
     'use strict';
 
     var host = window.location.origin;
     var network = new Lampa.Reguest();
+    var logger = new Logger();
 
     function startPlugin() {
         if (window.profiles_plugin == true) {
-            console.info('profiles.js: plugin is already started');
+            logger.warning('Plugin is already started');
             return;
         }
 
         window.profiles_plugin = true;
 
-        if (Lampa.Storage.get('lampac_unic_id', '') == '') {
-            console.error('profiles.js: lampac_unic_id is empty');
-            return;
-        }
-
         if (cubSyncEnabled()) {
-            console.error('profiles.js: CUB account is used');
+            logger.error('The CUB syncronization is used');
             return;
         }
 
         Lampa.Storage.listener.follow('change', function(event) {
-            if (event.name == 'account' || event.name == 'account_use' && cubSyncEnabled()) {
+            if (event.name == 'account' || event.name == 'account_use' || event.name == 'lampac_unic_id') {
                 location.reload();
             }
         });
 
         data.syncProfileId = Lampa.Storage.get('lampac_profile_id', '');
 
-        network.silent(addAuthParams(host + '/reqinfo'), function (reqinfo) {
-            if (reqinfo.user_uid) {
-                data.userProfiles = getProfiles(reqinfo);
-
-                if (data.userProfiles.length == 0) {
-                    console.error('profiles.js: profiles are not defined');
-                    return;
-                }
-
-                Lampa.Listener.follow('activity', function (e) {
-                    if (e.type == 'archive'
-                        && e.object.outdated
-                        && Lampa.Storage.get('lampac_profile_upt_type', 'soft') == 'soft'
-                    ) {
-                        softRefresh();
-                    }
-                });
-
-                var profile = initDefaultState();
-                replaceProfileButton(profile);
-                addSettings();
+        network.silent(addAuthParams(host + '/reqinfo'), function(reqinfo) {
+            if (!reqinfo.user_uid) {
+                logger.error('accsdb', reqinfo)
+                return;
             }
+
+            data.userProfiles = getProfiles(reqinfo);
+
+            if (data.userProfiles.length == 0) {
+                logger.error('Profiles are not defined');
+                return;
+            }
+
+            Lampa.Listener.follow('activity', function(e) {
+                if (e.type == 'archive'
+                    && e.object.outdated
+                    && Lampa.Storage.get('lampac_profile_upt_type', 'soft') == 'soft'
+                ) {
+                    softRefresh();
+                }
+            });
+
+            var profile = initDefaultState();
+            replaceProfileButton(profile);
+            addSettings();
+
+            logger.info('Plugin is loaded');
+            logger.info('Refresh type: ', Lampa.Storage.get('lampac_profile_upt_type', 'soft'));
         });
     }
 
     function initDefaultState() {
-        var profile = data.userProfiles.find(function (profile) {
+        var profile = data.userProfiles.find(function(profile) {
             return profile.selected;
         });
 
@@ -68,6 +70,7 @@
         }
 
         if (!alreadySyncUsed()) {
+            logger.debug('Add the sync.js script to the app');
             Lampa.Utils.putScriptAsync([host + '/sync.js']);
         }
 
@@ -95,14 +98,15 @@
                         profile: profile
                     };
                 }),
-                onSelect: function (item) {
+                onSelect: function(item) {
                     if (item.profile.id != data.syncProfileId) {
+                        logger.info('Switch to profile', item.profile);
+
                         Lampa.Loading.start();
                         var interceptor = new EventInterceptor(Lampa.Storage.listener);
 
-                        interceptor.onEvent = function (event, data) {
-                            console.debug('profiles.json: intercepted event', { event, data });
-
+                        logger.debug('Storage event interception is started');
+                        interceptor.onEvent = function(event, data) {
                             var syncedStorageField = event == 'change'
                                 && data.name == 'lampac_sync_favorite'
                                 && data.value > 0;
@@ -116,6 +120,7 @@
 
                             interceptor.destroy();
                             Lampa.Loading.stop();
+                            logger.debug('Storage event interception is stopped');
 
                             var currentActivity = Lampa.Activity.active().activity;
                             Lampa.Activity.all().forEach(function(page) {
@@ -125,7 +130,7 @@
                             softRefresh();
                         };
 
-                        data.userProfiles.find(function (profile) {
+                        data.userProfiles.find(function(profile) {
                             return profile.id == data.syncProfileId;
                         }).selected = false;
 
@@ -135,6 +140,7 @@
                         Lampa.Storage.set('lampac_profile_id', item.profile.id);
                         clearProfileData();
 
+                        logger.debug('Request for actual profile data')
                         document.dispatchEvent(new CustomEvent('lwsEvent', {
                             detail: { name: 'system', data: 'reconnected' }
                         }));
@@ -144,7 +150,7 @@
                         Lampa.Controller.toggle('content');
                     }
                 },
-                onBack: function () {
+                onBack: function() {
                     Lampa.Controller.toggle('content');
                 }
             });
@@ -226,7 +232,7 @@
 
         var params = hasUserParams ? reqinfo.user.params : reqinfo.params;
 
-        return params.profiles.map(function (profile, index) {
+        var profiles = params.profiles.map(function(profile, index) {
             var profileId = hasProp(profile.id) ? profile.id.toString() : index.toString();
             return {
                 title: hasProp(profile.title)
@@ -237,6 +243,9 @@
                 selected: profileId == data.syncProfileId,
             };
         });
+
+        logger.debug('Profiles are parsed:', profiles);
+        return profiles;
 
         function hasProp(value) {
             return value != undefined && value != null;
@@ -250,16 +259,20 @@
 
         Lampa.Activity.replace(object);
         activity.outdated = false;
+
+        logger.info('Soft refresh:', object);
     }
 
 
     function clearProfileData() {
+        logger.debug('Clear profile data');
+
         syncConfig.syncKeys.forEach(localStorage.removeItem.bind(localStorage));
         Object.keys(Lampa.Favorite.full()).forEach(Lampa.Favorite.clear.bind(Lampa.Favorite));
 
         Lampa.Storage.set('favorite', {});
 
-        syncConfig.syncTimestamps.forEach(function (timestamp) {
+        syncConfig.syncTimestamps.forEach(function(timestamp) {
             Lampa.Storage.set(timestamp, 0);
         });
     }
@@ -269,7 +282,7 @@
     }
 
     function alreadySyncUsed() {
-        var isSyncPluginEnabled = Lampa.Storage.get('plugins', '[]').some(function (plugin) {
+        var isSyncPluginEnabled = Lampa.Storage.get('plugins', '[]').some(function(plugin) {
             return plugin.status == 1 && isSyncScript(plugin.url);
         });
 
@@ -277,9 +290,9 @@
             return true;
         }
 
-        return $.map($('script'), function (script) {
+        return $.map($('script'), function(script) {
             return $(script).attr('src') || '';
-        }).some(function (src) {
+        }).some(function(src) {
             return isSyncScript(src);
         });
 
@@ -301,21 +314,37 @@
         return url;
     }
 
+    function Logger() {
+        var levels = ['info', 'warning', 'error', 'debug'];
+        var tags = { info: 'INF', warning: 'WRN', error: 'ERR', debug: 'DBG' };
+    
+        levels.forEach(function(level) {
+            this[level] = function() {
+                this.log(tags[level] + ':', arguments);
+            };
+        }, this);
+    
+        this.log = function(tag, args) {
+            console.log.apply(console, ['Profiles', tag].concat(Array.prototype.slice.call(args)));
+        };
+    }
+
     function EventInterceptor(listener) {
         var self = this;
         var originalSend = listener.send;
 
         self.onEvent = null;
 
-        listener.send = function (event, data) {
+        listener.send = function(event, data) {
             if (typeof self.onEvent == 'function') {
+                logger.debug('Event is intercepted: ', event, data);
                 self.onEvent(event, data);
             } else {
                 originalSend(event, data);
             }
         };
 
-        self.destroy = function () {
+        self.destroy = function() {
             listener.send = originalSend;
         }
     }
@@ -343,12 +372,12 @@
     };
 
     if (window.appready) {
-        setTimeout(function () { startPlugin(); }, 500);
+        setTimeout(function() { startPlugin(); }, 500);
     } else {
-        var onAppReady = function (event) {
+        var onAppReady = function(event) {
             if (event.type != 'ready') return;
             Lampa.Listener.remove('app', onAppReady);
-            setTimeout(function () { startPlugin(); }, 500);
+            setTimeout(function() { startPlugin(); }, 500);
         }
         Lampa.Listener.follow('app', onAppReady);
     }
