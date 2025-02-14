@@ -103,24 +103,41 @@
                         logger.info('Switch to profile', item.profile);
 
                         Lampa.Loading.start();
-                        var interceptor = new EventInterceptor(Lampa.Storage.listener);
 
-                        logger.debug('Storage event interception is started');
-                        interceptor.onEvent = function(event, data) {
+                        window.sync_disable = true;
+
+                        item.profile.selected = true;
+                        data.syncProfileId = item.profile.id;
+
+                        Lampa.Storage.set('lampac_profile_id', item.profile.id);
+                        clearProfileData();
+
+                        data.userProfiles.find(function(profile) {
+                            return profile.id == data.syncProfileId;
+                        }).selected = false;
+
+                        $('#user_profile_icon').attr('src', item.profile.icon);
+
+                        window.sync_disable = false;
+
+                        var syncTimestamps = []
+                        var profileRefresh = function(event) {
                             var syncedStorageField = event == 'change'
-                                && data.name == 'lampac_sync_favorite'
+                                && syncConfig.syncTimestamps.includes(data.name)
                                 && data.value > 0;
-
+                            
                             if (!syncedStorageField) return;
+                            syncTimestamps.push(data.name);
 
+                            if (syncTimestamps.length != syncTimestamps.length) return;
+                            
                             if (Lampa.Storage.get('lampac_profile_upt_type', 'soft') == 'full') {
                                 window.location.reload();
                                 return;
                             }
 
-                            interceptor.destroy();
+                            Lampa.Storage.listener.remove(profileRefresh);
                             Lampa.Loading.stop();
-                            logger.debug('Storage event interception is stopped');
 
                             var currentActivity = Lampa.Activity.active().activity;
                             Lampa.Activity.all().forEach(function(page) {
@@ -130,22 +147,15 @@
                             softRefresh();
                         };
 
-                        data.userProfiles.find(function(profile) {
-                            return profile.id == data.syncProfileId;
-                        }).selected = false;
+                        Lampa.Storage.listener.follow('change', profileRefresh);
 
-                        item.profile.selected = true;
-                        data.syncProfileId = item.profile.id;
+                        setTimeout(function() {
+                            logger.debug('Request for actual profile data');
 
-                        Lampa.Storage.set('lampac_profile_id', item.profile.id);
-                        clearProfileData();
-
-                        logger.debug('Request for actual profile data')
-                        document.dispatchEvent(new CustomEvent('lwsEvent', {
-                            detail: { name: 'system', data: 'reconnected' }
-                        }));
-
-                        $('#user_profile_icon').attr('src', item.profile.icon);
+                            document.dispatchEvent(new CustomEvent('lwsEvent', {
+                                detail: { name: 'system', data: 'reconnected' }
+                            }));
+                        }, 200);
                     } else {
                         Lampa.Controller.toggle('content');
                     }
@@ -327,26 +337,6 @@
         this.log = function(tag, args) {
             console.log.apply(console, ['Profiles', tag].concat(Array.prototype.slice.call(args)));
         };
-    }
-
-    function EventInterceptor(listener) {
-        var self = this;
-        var originalSend = listener.send;
-
-        self.onEvent = null;
-
-        listener.send = function(event, data) {
-            if (typeof self.onEvent == 'function') {
-                logger.debug('Event is intercepted: ', event, data);
-                self.onEvent(event, data);
-            } else {
-                originalSend(event, data);
-            }
-        };
-
-        self.destroy = function() {
-            listener.send = originalSend;
-        }
     }
 
     var syncConfig = {
