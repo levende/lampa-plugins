@@ -112,9 +112,9 @@
                         Lampa.Storage.set('lampac_profile_id', item.profile.id);
                         clearProfileData();
 
-                        data.userProfiles.find(function(profile) {
-                            return profile.id == data.syncProfileId;
-                        }).selected = false;
+                        data.userProfiles
+                            .filter(function(profile) { return profile.id != data.syncProfileId; })
+                            .forEach(function(profile) { profile.selected = false; });
 
                         $('#user_profile_icon').attr('src', item.profile.icon);
 
