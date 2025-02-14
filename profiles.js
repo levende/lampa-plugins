@@ -80,7 +80,7 @@
     function replaceProfileButton(profile) {
         var profileButton = $(
             '<div class="head__action selector open--profile">' +
-                '<img id="user_profile_icon" src="' + profile.icon + '"/>' +
+            '<img id="user_profile_icon" src="' + profile.icon + '"/>' +
             '</div>');
 
         $('.open--profile').before(profileButton).remove();;
@@ -103,7 +103,6 @@
                         logger.info('Switch to profile', item.profile);
 
                         Lampa.Loading.start();
-
                         window.sync_disable = true;
 
                         item.profile.selected = true;
@@ -124,12 +123,12 @@
                         var profileRefresh = function(event) {
                             var syncedStorageField = syncConfig.syncTimestamps.indexOf(event.name) != -1
                                 && event.value > 0;
-                            
+
                             if (!syncedStorageField) return;
                             syncTimestamps.push(event.name);
 
-                            if (syncTimestamps.length != syncTimestamps.length) return;
-                            
+                            if (syncConfig.syncTimestamps.length != syncTimestamps.length) return;
+
                             if (Lampa.Storage.get('lampac_profile_upt_type', 'soft') == 'full') {
                                 window.location.reload();
                                 return;
@@ -142,7 +141,7 @@
                             Lampa.Activity.all().forEach(function(page) {
                                 page.outdated = page.activity != currentActivity;
                             });
-                            
+
                             softRefresh();
                         };
 
@@ -215,16 +214,16 @@
                     full: Lampa.Lang.translate('lampac_profile_full_refresh'),
                     soft: Lampa.Lang.translate('lampac_profile_soft_refresh'),
                 },
-                    default: 'soft'
-                },
-                field: {
-                    name: Lampa.Lang.translate('lampac_profile_upt_type'),
-                    description: Lampa.Lang.translate('lampac_profile_upt_type_descr'),
-                },
-                onChange: function(value) {
-                    Lampa.Storage.set('lampac_profile_upt_type', value);
-                }
+                default: 'soft'
+            },
+            field: {
+                name: Lampa.Lang.translate('lampac_profile_upt_type'),
+                description: Lampa.Lang.translate('lampac_profile_upt_type_descr'),
+            },
+            onChange: function(value) {
+                Lampa.Storage.set('lampac_profile_upt_type', value);
             }
+        }
         )
     }
 
@@ -260,16 +259,15 @@
             return value != undefined && value != null;
         }
     }
-    
+
     function softRefresh() {
         var activity = Lampa.Activity.active();
-        var object = Lampa.Activity.extractObject(activity);
-        object.page = 1;
 
-        Lampa.Activity.replace(object);
+        activity.page = 1;
+        Lampa.Activity.replace(activity);
         activity.outdated = false;
 
-        logger.info('Soft refresh:', object);
+        logger.info('Soft refresh:', activity);
     }
 
 
@@ -326,13 +324,13 @@
     function Logger() {
         var levels = ['info', 'warning', 'error', 'debug'];
         var tags = { info: 'INF', warning: 'WRN', error: 'ERR', debug: 'DBG' };
-    
+
         levels.forEach(function(level) {
             this[level] = function() {
                 this.log(tags[level] + ':', arguments);
             };
         }, this);
-    
+
         this.log = function(tag, args) {
             console.log.apply(console, ['Profiles', tag].concat(Array.prototype.slice.call(args)));
         };
