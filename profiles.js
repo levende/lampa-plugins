@@ -122,12 +122,11 @@
 
                         var syncTimestamps = []
                         var profileRefresh = function(event) {
-                            var syncedStorageField = event == 'change'
-                                && syncConfig.syncTimestamps.includes(data.name)
-                                && data.value > 0;
+                            var syncedStorageField = syncConfig.syncTimestamps.indexOf(event.name) != -1
+                                && event.value > 0;
                             
                             if (!syncedStorageField) return;
-                            syncTimestamps.push(data.name);
+                            syncTimestamps.push(event.name);
 
                             if (syncTimestamps.length != syncTimestamps.length) return;
                             
