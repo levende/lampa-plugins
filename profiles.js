@@ -50,6 +50,8 @@
 
             var profile = initDefaultState();
             replaceProfileButton(profile);
+            sendProfileEvent(profile, 'loaded');
+
             addSettings();
 
             logger.info('Plugin is loaded');
@@ -101,6 +103,7 @@
                 onSelect: function(item) {
                     if (item.profile.id != data.syncProfileId) {
                         logger.info('Switch to profile', item.profile);
+                        sendProfileEvent(item.profile, 'selected');
 
                         Lampa.Loading.start();
                         window.sync_disable = true;
@@ -143,6 +146,7 @@
                             });
 
                             softRefresh();
+                            sendProfileEvent(item.profile, 'loaded');
                         };
 
                         Lampa.Storage.listener.follow('change', profileRefresh);
@@ -249,6 +253,7 @@
                 id: profileId,
                 icon: hasProp(profile.icon) ? profile.icon : data.defaultProfileIcon,
                 selected: profileId == data.syncProfileId,
+                params: hasProp(profile.params) ? profile.params : {},
             };
         });
 
@@ -263,7 +268,10 @@
     function softRefresh() {
         var activity = Lampa.Activity.active();
 
-        activity.page = 1;
+        if (activity.page) {
+            activity.page = 1;
+        }
+
         Lampa.Activity.replace(activity);
         activity.outdated = false;
 
@@ -281,6 +289,14 @@
 
         syncConfig.syncTimestamps.forEach(function(timestamp) {
             Lampa.Storage.set(timestamp, 0);
+        });
+    }
+
+    function sendProfileEvent(profile, eventType) {
+        Lampa.Listener.send('profile', {
+            type: eventType,
+            profileId: profile.id,
+            params: profile.params,
         });
     }
 
