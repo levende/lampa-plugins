@@ -9,8 +9,7 @@
 - The plugin **does not guarantee** the preservation of the order of items in your history and bookmarks.
 
 ## Installation  
-You can install the plugin using the following link:  
-[bookmarks-sync.js](https://levende.github.io/lampa-plugins/bookmarks-sync.js)
+You can install the plugin using the following link: [bookmarks-sync.js](https://levende.github.io/lampa-plugins/bookmarks-sync.js)
 
 
 ---

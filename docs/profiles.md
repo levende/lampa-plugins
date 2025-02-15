@@ -26,7 +26,10 @@ To enable and configure profiles in Lampac, you need to make adjustments to the 
     {
       "id": "john", 
       "title": "John", 
-      "icon": "https://cdn.cub.red/img/profiles/f_1.png"
+      "icon": "https://cdn.cub.red/img/profiles/f_1.png",
+      "params": {
+        "adult": true
+      }
     },
     {
       "id": "anna", 
@@ -44,6 +47,34 @@ To enable and configure profiles in Lampac, you need to make adjustments to the 
 | `id`          | A custom string that serves as the profile's identifier. It is used for data synchronization. <br> - If the `id` is an empty string (`""`), the main account will be used for synchronization, with the data available without the plugin. <br> - If the `id` is not provided, the profile's index in the list will be used as the identifier. <br> - **Note:** Changing the profile's `id` will make the data associated with the old `id` unavailable under the new one. |
 | `title`       | The profile's display name. This is optional. If not provided, it will be automatically generated. |
 | `icon`        | The profile's display icon. It can either be: <br> - A direct URL to an image (e.g., `https://cdn.cub.red/img/profiles/f_1.png`). <br> - A base64-encoded image (e.g., `data:image/png;base64,iVBORw0K...`). <br> This parameter is optional. If not provided, a default icon will be used. |
+| `params`      | Additional parameters that can be used for integration with other plugins (see "Plugin Events" section) |
+
+## Plugin Events
+
+The plugin sends messages when the status of profiles changes. There are two types of events: loaded and selected
+- **loaded** - occurs when the profile is fully loaded
+- **selected** - occurs when the profile has been selected by the user
+
+Sample code for subscribing to plugin events
+```json
+Lampa.Listener.follow('profiles', function(event) {
+    if (event.params.adult) {
+        // Code for disabling sensitive information
+    }
+});
+```
+
+### Event fields
+
+| **Parameter** | **Description** |
+|---------------|-----------------|
+| `type`        | The profile event type. |
+| `profileId`   | THe `id` of the profile for which the event occurred. |
+| `params`      | Data from the `params` field of the profile object, which can be specified in init.conf (see example for the `John` profile) |
+
+
+## Installation  
+You can install the plugin using the following link: [profiles.js](https://levende.github.io/lampa-plugins/profiles.js)
 
 ---
 
