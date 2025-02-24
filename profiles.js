@@ -75,7 +75,7 @@
             Lampa.Storage.set('lampac_profile_id', profile.id);
         }
 
-        sendProfileEvent(item.profile, 'changed');
+        sendProfileEvent(profile, 'changed');
 
         if (!alreadySyncUsed()) {
             logger.debug('Add the sync.js script to the app');
