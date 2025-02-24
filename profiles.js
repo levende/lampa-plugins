@@ -26,6 +26,14 @@
 
         data.syncProfileId = Lampa.Storage.get('lampac_profile_id', '');
 
+        Lampa.Profile = {
+            active: function () {
+                return data.userProfiles.find(function (profile) {
+                    return profile.selected;
+                });
+            }
+        }
+
         network.silent(addAuthParams(host + '/reqinfo'), function(reqinfo) {
             if (!reqinfo.user_uid) {
                 logger.error('accsdb', reqinfo)
@@ -50,8 +58,6 @@
 
             var profile = initDefaultState();
             replaceProfileButton(profile);
-            sendProfileEvent(profile, 'loaded');
-
             addSettings();
 
             logger.info('Plugin is loaded');
@@ -60,9 +66,7 @@
     }
 
     function initDefaultState() {
-        var profile = data.userProfiles.find(function(profile) {
-            return profile.selected;
-        });
+        var profile = Lampa.Profile.active();
 
         if (!profile) {
             profile = data.userProfiles[0];
@@ -70,6 +74,8 @@
             data.syncProfileId = profile.id;
             Lampa.Storage.set('lampac_profile_id', profile.id);
         }
+
+        sendProfileEvent(item.profile, 'changed');
 
         if (!alreadySyncUsed()) {
             logger.debug('Add the sync.js script to the app');
@@ -103,7 +109,6 @@
                 onSelect: function(item) {
                     if (item.profile.id != data.syncProfileId) {
                         logger.info('Switch to profile', item.profile);
-                        sendProfileEvent(item.profile, 'selected');
 
                         Lampa.Loading.start();
                         window.sync_disable = true;
@@ -112,6 +117,8 @@
                         data.syncProfileId = item.profile.id;
 
                         Lampa.Storage.set('lampac_profile_id', item.profile.id);
+                        sendProfileEvent(item.profile, 'changed');
+
                         clearProfileData();
 
                         data.userProfiles
@@ -146,7 +153,6 @@
                             });
 
                             softRefresh();
-                            sendProfileEvent(item.profile, 'loaded');
                         };
 
                         Lampa.Storage.listener.follow('change', profileRefresh);

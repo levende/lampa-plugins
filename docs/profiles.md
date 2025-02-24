@@ -52,12 +52,13 @@ To enable and configure profiles in Lampac, you need to make adjustments to the 
 ## Plugin Events
 
 The plugin sends messages when the status of profiles changes. There are two types of events: loaded and selected
-- **loaded** - occurs when the profile is fully loaded
-- **selected** - occurs when the profile has been selected by the user
+- **changed** - occurs when the profile is loaded (at the moment of application opening and at the moment of profile changing by the user)
 
 Sample code for subscribing to plugin events
 ```json
 Lampa.Listener.follow('profiles', function(event) {
+    if (evnt.type != 'changed') return;
+
     if (event.params.adult) {
         // Code for disabling sensitive information
     }
