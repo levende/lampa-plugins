@@ -56,7 +56,7 @@ The plugin sends messages when the status of profiles changes. There are two typ
 
 Sample code for subscribing to plugin events
 ```json
-Lampa.Listener.follow('profiles', function(event) {
+Lampa.Listener.follow('profile', function(event) {
     if (evnt.type != 'changed') return;
 
     if (event.params.adult) {
