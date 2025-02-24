@@ -55,7 +55,7 @@ The plugin sends messages when the status of profiles changes. There are two typ
 - **changed** - occurs when the profile is loaded (at the moment of application opening and at the moment of profile changing by the user)
 
 Sample code for subscribing to plugin events
-```json
+```javascript
 Lampa.Listener.follow('profile', function(event) {
     if (evnt.type != 'changed') return;
 
