@@ -5,14 +5,6 @@
     var network = new Lampa.Reguest();
     var logger = new Logger();
 
-    Lampa.Profile = {
-        active: function () {
-            return data.userProfiles.find(function (profile) {
-                return profile.selected;
-            });
-        }
-    };
-
     function startPlugin() {
         if (window.profiles_plugin == true) {
             logger.warning('Plugin is already started');
@@ -66,7 +58,9 @@
     }
 
     function initDefaultState() {
-        var profile = Lampa.Profile.active();
+        var profile = data.userProfiles.find(function (profile) {
+            return profile.selected;
+        });
 
         if (!profile) {
             profile = data.userProfiles[0];
