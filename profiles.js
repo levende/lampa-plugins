@@ -370,7 +370,7 @@
     var syncConfig = {
         check: {
             interval: 200,
-            timeout: 5 * 60 * 1000,
+            timeout: 5 * 1000,
         },
         syncKeys: [
             'favorite',
