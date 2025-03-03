@@ -39,6 +39,18 @@
                 return;
             }
 
+            data.lwsConnected = !!window.lwsEvent;
+
+            document.addEventListener('lwsEvent', function (event) {
+                if (!event.detail) return;
+                var eventDetail = event.detail;
+
+                if (eventDetail.name == 'system' && eventDetail.src != 'profiles.js' && lwsConnectionEventValues.indexOf(eventDetail.data) >= 0) {
+                    data.lwsConnected = eventDetail.data == lwsConnectionEventType.CONNECTED;
+                    logger.debug('lws connection changed: ' + data.lwsConnected);
+                }
+            });
+
             Lampa.Listener.follow('activity', function (e) {
                 if (e.type == 'archive'
                     && e.object.outdated
@@ -52,8 +64,7 @@
             replaceProfileButton(profile);
             addSettings();
 
-            logger.info('Plugin is loaded');
-            logger.info('Refresh type: ', Lampa.Storage.get('lampac_profile_upt_type', 'soft'));
+            logger.info('Plugin is loaded: ', data);
         });
     }
 
@@ -116,6 +127,10 @@
 
                         clearProfileData();
 
+                        if (!data.lwsConnected) {
+                            window.location.reload();
+                        }
+
                         data.userProfiles
                             .filter(function (profile) { return profile.id != data.syncProfileId; })
                             .forEach(function (profile) { profile.selected = false; });
@@ -128,7 +143,7 @@
                             logger.debug('Sync with new profile');
 
                             document.dispatchEvent(new CustomEvent('lwsEvent', {
-                                detail: { name: 'system', data: 'reconnected' }
+                                detail: { name: 'system', data: lwsConnectionEventType.RECONNECTED, src: 'profiles.js' }
                             }));
                         }, 200);
 
@@ -205,6 +220,16 @@
                 en: 'Full refresh',
                 uk: 'Повне оновлення',
                 ru: 'Полное обновление',
+            },
+            lampac_profile_refresh_timeout: {
+                en: 'Refresh timeout',
+                uk: 'Таймаут оновлення',
+                ru: 'Таймаут обновления',
+            },
+            lampac_profile_refresh_timeout_descr: {
+                en: 'Timeout for synchronization during soft update (in seconds)',
+                uk: 'Таймаут для синхронізації в разі м’якого оновлення (у секундах)',
+                ru: 'Таймаут для синхронизации при мягком обновление (в секундах)',
             }
         });
     }
@@ -242,8 +267,30 @@
             onChange: function (value) {
                 Lampa.Storage.set('lampac_profile_upt_type', value);
             }
-        }
-        )
+        });
+
+        Lampa.SettingsApi.addParam({
+            component: 'lampac_profiles',
+            param: {
+                name: 'lampac_profile_refresh_timeout',
+                type: 'select',
+                values: {
+                    5: '5',
+                    10: '10',
+                    30: '30',
+                    60: '60'
+                },
+                default: '10'
+            },
+            field: {
+                name: Lampa.Lang.translate('lampac_profile_refresh_timeout'),
+                description: Lampa.Lang.translate('lampac_profile_refresh_timeout_descr'),
+            },
+            onChange: function (value) {
+                Lampa.Storage.set('lampac_profile_refresh_timeout', value);
+                syncConfig.check.timeout = value * 1000;
+            }
+        });
     }
 
     function getProfiles(reqinfo) {
@@ -272,7 +319,6 @@
             };
         });
 
-        logger.debug('Profiles are parsed:', profiles);
         return profiles;
 
         function hasProp(value) {
@@ -367,10 +413,20 @@
         };
     }
 
+    var lwsConnectionEventType = Object.freeze({
+        CONNECTED: "connected",
+        RECONNECTED: "reconnected",
+        CLOSED: "onclose"
+    });
+
+    var lwsConnectionEventValues = Object.keys(lwsConnectionEventType).map(function (key) {
+        return lwsConnectionEventType[key];
+    });
+
     var syncConfig = {
         check: {
             interval: 200,
-            timeout: 5 * 1000,
+            timeout: Lampa.Storage.get('lampac_profile_refresh_timeout', 10) * 1000,
         },
         syncKeys: [
             'favorite',
@@ -388,6 +444,7 @@
     };
 
     var data = {
+        lwsConnected: false,
         syncProfileId: '',
         userProfiles: [],
         defaultProfileIcon: 'https://levende.github.io/lampa-plugins/assets/profile_icon.png',
