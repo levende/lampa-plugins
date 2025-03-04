@@ -12,4 +12,8 @@ Welcome to the page! This page contains a collection of plugins designed to enha
 - **[https://levende.github.io/lampa-plugins/profiles.js](https://levende.github.io/lampa-plugins/profiles.js)**
 - **[Description](https://levende.github.io/lampa-plugins/docs/profiles)**
 
+### 3. **TMDB Networks**
+- **[https://levende.github.io/lampa-plugins/tmdb-networks.js](https://levende.github.io/lampa-plugins/tmdb-networks.js)**
+- **Description**
+
 *Note: Please ensure you follow the installation instructions carefully and review the plugin description for any important details before use.*
