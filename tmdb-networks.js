@@ -69,8 +69,10 @@
         return moreBtn;
     }
 
-    function renderNetworks(movie) {
-        var render = Lampa.Activity.active().activity.render();
+    function renderNetworks(object) {
+        var render = object.activity.render();
+        var movie = object.card;
+
         $('.tmdb-networks', render).remove();
         if (!movie || movie.source !== 'tmdb' || !movie.networks || !movie.networks.length) return;
 
@@ -158,14 +160,14 @@
         addLocalization();
 
         Lampa.Listener.follow('activity', function (e) {
-            if (e.type === 'archive' && e.object) {
-                renderNetworks(e.object.card);
+            if (e.type === 'archive') {
+                renderNetworks(e.object);
             }
         });
 
         Lampa.Listener.follow('full', function (e) {
             if (e.type === 'complite' && (e.object.method === 'tv' || e.object.method === 'movie')) {
-                renderNetworks(e.data.movie);
+                renderNetworks(e.object);
             }
         });
     }
