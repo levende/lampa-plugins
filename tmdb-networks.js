@@ -29,18 +29,17 @@
     }
 
     function createNetworkButton(network, index) {
-        var networkBtn = $('<div class="full-descr__tag selector network-btn"></div>');
+        var networkBtn = $('<div class="tag-count selector network-btn"></div>');
 
         if (network.logo_path) {
-            networkBtn.css('background-color', '#fff');
+            networkBtn.addClass('network-logo');
             var logo = $('<img/>').attr({
                 src: Lampa.TMDB.image("t/p/w300" + network.logo_path),
                 alt: network.name,
-                height: 24
-            }).css('background-color', '#fff');
+            });
             networkBtn.append(logo);
         } else {
-            networkBtn.text(network.name);
+            networkBtn.append($('<div class="tag-count__name">' + network.name + '</div>'))
         }
 
         if (index >= VISIBLE_NETWORKS_LIMIT) {
@@ -56,9 +55,9 @@
 
     function createMoreButton(hiddenCount) {
         var moreBtn = $(
-            '<div class="full-descr__tag tag-count selector">' +
-                '<div class="tag-count__name">' + Lampa.Lang.translate('more') + '</div>' +
-                '<div class="tag-count__count">' + hiddenCount + '</div>' +
+            '<div class="tag-count selector">' +
+            '<div class="tag-count__name">' + Lampa.Lang.translate('more') + '</div>' +
+            '<div class="tag-count__count">' + hiddenCount + '</div>' +
             '</div>'
         );
 
@@ -71,23 +70,25 @@
     }
 
     function renderNetworks(movie) {
-        $('.network-line').remove();
+        $('.tmdb-networks').remove();
         if (!movie || movie.source !== 'tmdb' || !movie.networks || !movie.networks.length) return;
 
         var networksLine = $(
-            '<div class="items-line network-line">' +
+            '<div class="tmdb-networks">' +
                 '<div class="items-line__head">' +
-                '<div class="items-line__title">' + Lampa.Lang.translate('tmdb_networks') + '</div>' +
-            '</div>' +
-                '<div class="items-line__body">' +
+                    '<div class="items-line__title">' + Lampa.Lang.translate('tmdb_networks') + '</div>' +
+                '</div>' +
+                '<div class="items-line__body" style="margin-bottom:3em;">' +
                     '<div class="full-descr">' +
-                        '<div class="full-descr__line-body"></div>' +
+                        '<div class="full-descr__left">' +
+                            '<div class="full-descr__tags" style="margin-top:0;"></div>' +
+                        '</div>' +
                     '</div>' +
                 '</div>' +
             '</div>'
         );
 
-        var container = $('.full-descr__line-body', networksLine);
+        var container = $('.full-descr__tags', networksLine);
 
         movie.networks.forEach(function (network, index) {
             container.append(createNetworkButton(network, index, movie.networks.length));
@@ -97,7 +98,7 @@
             }
         });
 
-        $('.full-start-new').after(networksLine);
+        $('.items-line', Lampa.Activity.active().activity.render()).eq(0).prepend(networksLine);
     }
 
     function onNetworkButtonClick(network) {
@@ -106,12 +107,14 @@
             {
                 title: Lampa.Lang.translate('tmdb_networks_open') + ' ' + Lampa.Lang.translate('tmdb_networks_top').toLowerCase(),
                 sort_by: '',
-                type: Lampa.Lang.translate('tmdb_networks_top')
+                type: Lampa.Lang.translate('tmdb_networks_top'),
+                filter: {},
             },
             {
                 title: Lampa.Lang.translate('tmdb_networks_open') + ' ' + Lampa.Lang.translate('tmdb_networks_new').toLowerCase(),
                 sort_by: 'first_air_date.desc',
-                type: Lampa.Lang.translate('tmdb_networks_new')
+                type: Lampa.Lang.translate('tmdb_networks_new'),
+                filter: { 'first_air_date.lte': new Date().toISOString().split('T')[0] },
             }
         ];
 
@@ -130,7 +133,8 @@
                     sort_by: action.sort_by,
                     source: 'tmdb',
                     card_type: true,
-                    page: 1
+                    page: 1,
+                    filter: action.filter,
                 });
             }
         });
@@ -141,6 +145,14 @@
             return;
         }
         window.tmdb_networks = true;
+
+        $('head').append(
+            '<style>' +
+                '.network-logo {background-color:#fff}' +
+                '.network-logo img {height:25px}' +
+                '.network-logo.focus {box-shadow:0 0 0 5px rgba(0, 0, 0, 0.4)}' +
+            '</style>'
+        );
 
         addLocalization();
 
