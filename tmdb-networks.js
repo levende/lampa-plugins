@@ -70,7 +70,8 @@
     }
 
     function renderNetworks(movie) {
-        $('.tmdb-networks').remove();
+        var render = Lampa.Activity.active().activity.render();
+        $('.tmdb-networks', render).remove();
         if (!movie || movie.source !== 'tmdb' || !movie.networks || !movie.networks.length) return;
 
         var networksLine = $(
@@ -98,7 +99,7 @@
             }
         });
 
-        $('.items-line', Lampa.Activity.active().activity.render()).eq(0).prepend(networksLine);
+        $('.items-line', render).eq(0).prepend(networksLine);
     }
 
     function onNetworkButtonClick(network) {
