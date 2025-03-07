@@ -51,6 +51,15 @@
                 }
             });
 
+            $.ajaxPrefilter(function (options, originalOptions, jqXHR) {
+                if (window.sync_disable && options.url.includes("/storage/set")) {
+                    options.beforeSend = function (jqXHR) {
+                        logger.error('Request aborted', options.url);
+                        jqXHR.abort();
+                    };
+                }
+            });
+
             Lampa.Listener.follow('activity', function (e) {
                 if (e.type == 'archive'
                     && e.object.outdated
@@ -112,12 +121,12 @@
                     };
                 }),
                 onSelect: function (item) {
-                    if (item.profile.id != data.syncProfileId) {
+                    window.sync_disable = item.profile.id != data.syncProfileId;
+
+                    if (window.sync_disable) {
                         logger.info('Switch to profile', item.profile);
 
                         Lampa.Loading.start();
-
-                        window.sync_disable = true;
 
                         item.profile.selected = true;
                         data.syncProfileId = item.profile.id;
@@ -137,10 +146,9 @@
 
                         $('#user_profile_icon').attr('src', item.profile.icon);
 
-                        window.sync_disable = false;
-
                         setTimeout(function () {
                             logger.debug('Sync with new profile');
+                            window.sync_disable = false;
 
                             document.dispatchEvent(new CustomEvent('lwsEvent', {
                                 detail: { name: 'system', data: lwsConnectionEventType.RECONNECTED, src: 'profiles.js' }
