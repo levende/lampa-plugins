@@ -597,16 +597,6 @@
                     uk: 'Про плагін',
                     ru: 'О плагине'
                 },
-                lampac_profiles_plugin_docs: {
-                    en: 'Documentation',
-                    uk: 'Документація',
-                    ru: 'Документация',
-                },
-                lampac_profiles_plugin_contacts: {
-                    en: 'Contacts',
-                    uk: 'Контакти',
-                    ru: 'Контакты',
-                },
                 lampac_profiles_plugin_descr: {
                     en: 'The plugin enables profile management in the Lampa app without requiring the CUB service. Additionally, it seamlessly integrates with the Lampac service for data synchronization, ensuring a smooth and connected user experience.',
                     uk: 'Плагін додає можливість керувати профілями в додатку Lampa без необхідності використання сервісу CUB. Крім того, він інтегрується з сервісом Lampac для зручної синхронізації даних, створюючи комфортний користувацький досвід.',
@@ -618,13 +608,14 @@
         function showAbout() {
             var html =
                 '<p>' + Lampa.Lang.translate('lampac_profiles_plugin_descr') + '</p>' +
-                '<p><span class="account-add-device__site">' + Lampa.Lang.translate('title_author') + ':</span> ' + pluginManifest.author + '</p>' +
-                '<p><span class="account-add-device__site">' + Lampa.Lang.translate('about_version') + ':</span > '+ pluginManifest.version + '</p>' +
-                '<p><span class="account-add-device__site">' + Lampa.Lang.translate('lampac_profiles_plugin_contacts') + ':</span > '+ pluginManifest.contact + '</p>' +
-                '<div style="text-align: center">' +
-                    '<img src="https://quickchart.io/qr?text=' + pluginManifest.docs + '&size=300" alt="Documentation"/>' +
-                    '<span style="display:block" class="settings-param__descr">' + Lampa.Lang.translate('lampac_profiles_plugin_docs') + '</span>' +
-                '</div>';
+                '<div style="width: 65%; float: left;">' +
+                    '<p><span class="account-add-device__site">' + Lampa.Lang.translate('title_author') + '</span> ' + pluginManifest.author + '</p>' +
+                    '<p><span class="account-add-device__site">' + Lampa.Lang.translate('about_version') + '</span> '+ pluginManifest.version + '</p>' +
+                '</div>' +
+                '<div style="width: 30%; float: right; text-align: center;">' +
+                    '<img src="https://quickchart.io/qr?text=' + pluginManifest.docs + '&size=200" alt="Documentation"/>' +
+                '</div>' +
+                '<div style="clear: both;"></div>';
 
             var controller = Lampa.Controller.enabled().name;
             Lampa.Select.show({
