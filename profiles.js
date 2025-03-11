@@ -529,7 +529,7 @@
                     notifySvc.notify(currentProfile, 'changed');
 
                     if (!syncScriptUsed() && state.online) {
-                        var scriptPath = host + '/sync.js';
+                        var scriptPath = state.host + '/sync.js';
                         Lampa.Utils.putScriptAsync([scriptPath], function () {
                             logger.debug('The script has been added to the app', scriptPath);
                         });
