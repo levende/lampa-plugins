@@ -1,20 +1,21 @@
 # Profiles Plugin
 
 ## Overview
-The **Profiles Plugin** is designed to organize user profiles without relying on CUB services. This plugin can only be used in applications where the server is based on **[Lampac](https://github.com/immisterio/Lampac)**.
+The plugin enables profile management in the Lampa app without requiring the **[CUB](https://cub.red)** service. Additionally, it seamlessly integrates with the **[Lampac service](https://github.com/immisterio/Lampac)** service for data synchronization, ensuring a smooth and connected user experience.
 
 ## Features
-- **User Profiles**: Allows the creation and management of user profiles within the application, independent of CUB services.
-- **Customizable**: You can define profiles globally or individually for specific users.
-- **Soft Refresh**  The application updates data without a full reload after a user profile change. (Can be changed in settings).
+- **Independent Profile Management**: Add and manage profiles in the Lampa app without relying on the CUB service.
+- **Flexible Profile Configuration**: Customize profiles with various settings to fit your needs.
+- **Soft Refresh**: Switch profiles without restarting the app, ensuring a smooth experience.
+- **Integration with Other Plugins**: Extend functionality by integrating with third-party plugins.
 
-## Configuration
-To enable and configure profiles in Lampac, you need to make adjustments to the `accsdb` settings:
+## **Configuration (Lampac)**  
+To enable profile support for users, modifications must be made to the **`accsdb`** section in the **`init.conf`** file:  
+- Add an array of available profiles to the **`params`** field. This setting can be applied globally for all users or individually for specific users.  
+- To create **global profiles**, define the configuration directly in **`accsdb.params`**.  
+- To assign **user-specific profiles**, add the profile configuration inside the **`params`** property of the respective user object.  
 
-1. Add `profiles` to the **params** section in your `accsdb` configuration.
-2. This setting can be applied globally for all users and accounts or individually for specific users, with individual settings taking priority over the global configuration.
-3. Disable CUB syncronization if it enabled.
-4. Add the plugin to the application.
+The plugin supports **profile priority handling**, meaning it will first attempt to use user-specific profiles. If none are found, it will fall back to the global settings.
 
 ### Example Configuration
 ```json
@@ -28,13 +29,19 @@ To enable and configure profiles in Lampac, you need to make adjustments to the 
       "title": "John", 
       "icon": "https://cdn.cub.red/img/profiles/f_1.png",
       "params": {
-        "adult": true
+        "adult": true,
+        "extraSettings": {
+          "hideAnime": true
+        }
       }
     },
     {
       "id": "anna", 
       "title": "Anna", 
-      "icon": "https://cdn.cub.red/img/profiles/f_2.png"
+      "icon": "https://cdn.cub.red/img/profiles/f_2.png",
+      "params": {
+        "hideHorrors": true
+      }
     }
   ]
 }
@@ -49,23 +56,26 @@ To enable and configure profiles in Lampac, you need to make adjustments to the 
 | `icon`        | The profile's display icon. It can either be: <br> - A direct URL to an image (e.g., `https://cdn.cub.red/img/profiles/f_1.png`). <br> - A base64-encoded image (e.g., `data:image/png;base64,iVBORw0K...`). <br> This parameter is optional. If not provided, a default icon will be used. |
 | `params`      | Additional parameters that can be used for integration with other plugins (see "Plugin Events" section) |
 
-## Plugin Events
+## Integrations
 
-The plugin sends messages when the status of profiles changes. There are two types of events: loaded and selected
-- **changed** - occurs when the profile is loaded (at the moment of application opening and at the moment of profile changing by the user)
+The plugin supports multiple integration methods: event sending during operation and pre-configuration before starting.
 
-Sample code for subscribing to plugin events
+### Plugin Events
+
+The plugin sends messages when the status of profiles changes:
+- **changed** — occurs when the profile is loaded (at the moment the application is opened and when the user changes the profile).
+
+Sample code for subscribing to plugin events:
 ```javascript
 Lampa.Listener.follow('profile', function(event) {
-    if (evnt.type != 'changed') return;
+  if (evnt.type != 'changed') return;
 
-    if (event.params.adult) {
-        // Code for disabling sensitive information
-    }
+  if (event.params.adult) {
+      // Code for disabling sensitive information
+  }
 });
 ```
-
-### Event fields
+#### Event fields
 
 | **Parameter** | **Description** |
 |---------------|-----------------|
@@ -73,6 +83,40 @@ Lampa.Listener.follow('profile', function(event) {
 | `profileId`   | THe `id` of the profile for which the event occurred. |
 | `params`      | Data from the `params` field of the profile object, which can be specified in init.conf (see example for the `John` profile) |
 
+### Pre-configuration
+The plugin supports pre-configuration of certain settings. These configurations must be applied **before** the plugin is loaded. To do this, the window.profiles_settings object should be used.
+
+| **Parameter** | **Default value** | **Description** |
+|---------------|-------------------|-----------------|
+| `profiles`            |`[]`         | List of available profiles in the application (with any additional parameters). If this list is not empty, profiles from the server will be ignored. |
+| `host`                |`window.location.origin`           | The url to a Lampac server; |
+| `defaultProfileIcon`  |`https://levende.github.io/lampa-plugins/assets/profile_icon.png`           | The picture that will be applied for profiles without icon field |
+| `showSettings`        |`true`           | A boolean flag indicating whether the profile settings should be added in the application settings.
+
+Sample code for a plugin that adds profiles to the application without allowing users to change settings (can be used even in the standalone Lampa application):
+```javascript
+(function () {
+    'use strict';
+
+    window.profiles_settings = {
+        profiles: [
+            {
+              id: '',
+              name: 'Profile 1',
+              params: {
+                adult: true,
+              },
+            },
+            {
+              id: 'profile_2',
+              icon: 'https://cdn.cub.red/img/profiles/f_2.png'
+            }
+       ]
+    };
+
+    Lampa.Utils.putScript(['https://levende.github.io/lampa-plugins/profiles.js'], function() {});
+})();
+```
 
 ## Installation  
 You can install the plugin using the following link: [profiles.js](https://levende.github.io/lampa-plugins/profiles.js)
