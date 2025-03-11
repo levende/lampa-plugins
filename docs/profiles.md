@@ -91,7 +91,7 @@ The plugin supports pre-configuration of certain settings. These configurations 
 | `profiles`            |`[]`         | List of available profiles in the application (with any additional parameters). If this list is not empty, profiles from the server will be ignored. |
 | `host`                |`window.location.origin`           | The url to a Lampac server; |
 | `defaultProfileIcon`  |`https://levende.github.io/lampa-plugins/assets/profile_icon.png`           | The picture that will be applied for profiles without icon field |
-| `showSettings`        |`true`           | A boolean flag indicating whether the profile settings should be added in the application settings.
+| `showSettings`        |`true`           | A boolean flag indicating whether the **Profiles plugin** settings should be added in the application settings.
 
 Sample code for a plugin that adds profiles to the application without allowing users to change settings (can be used even in the standalone Lampa application):
 ```javascript
