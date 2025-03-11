@@ -63,7 +63,7 @@ The plugin supports multiple integration methods: event sending during operation
 ### Plugin Events
 
 The plugin sends messages when the status of profiles changes:
-- **changed** — occurs when the profile is loaded (at the moment the application is opened and when the user changes the profile).
+- **changed** - occurs when the profile is loaded (at the moment the application is opened and when the user changes the profile).
 
 Sample code for subscribing to plugin events:
 ```javascript
