@@ -38,7 +38,7 @@
                 src: Lampa.TMDB.image("t/p/w300" + network.logo_path),
                 alt: network.name,
             });
-            networkBtn.append(logo);
+            networkBtn.append(logo);  
         } else {
             networkBtn.append($('<div class="tag-count__name">' + network.name + '</div>'))
         }
@@ -124,9 +124,6 @@
             container.append(createHideButton());
         }
 
-        var btnSize = $('.tag-count', render).eq(0).outerHeight();
-        $('.network-btn', container).css('height', btnSize + 'px');
-
         $('.items-line', render).eq(0).prepend(networksLine);
     }
 
@@ -179,6 +176,7 @@
         $('head').append(
             '<style>' +
                 '.tmdb-networks {margin-top:-3em}' +
+                '.network-btn {height:2.94em}' +
                 '.network-logo {background-color:#fff;position:relative}' +
                 '.network-logo .overlay {position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0, 0, 0, 0)}' +
                 '.network-logo img {padding:0.1em;height:100%}' +
