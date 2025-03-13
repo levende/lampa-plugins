@@ -5,11 +5,6 @@
 
     function addLocalization() {
         Lampa.Lang.add({
-            tmdb_networks: {
-                'en': 'Networks',
-                'uk': 'Мережі',
-                'ru': 'Сети',
-            },
             tmdb_networks_open: {
                 'en': 'Open',
                 'uk': 'Відкрити',
@@ -33,6 +28,7 @@
 
         if (network.logo_path) {
             networkBtn.addClass('network-logo');
+            networkBtn.append($('<div class="tag-count overlay"></div>'));
             var logo = $('<img/>').attr({
                 src: Lampa.TMDB.image("t/p/w300" + network.logo_path),
                 alt: network.name,
@@ -56,14 +52,15 @@
     function createMoreButton(hiddenCount) {
         var moreBtn = $(
             '<div class="tag-count selector">' +
-            '<div class="tag-count__name">' + Lampa.Lang.translate('more') + '</div>' +
-            '<div class="tag-count__count">' + hiddenCount + '</div>' +
+                '<div class="tag-count__name">' + Lampa.Lang.translate('more') + '</div>' +
+                '<div class="tag-count__count">' + hiddenCount + '</div>' +
             '</div>'
         );
 
         moreBtn.on('hover:enter', function () {
             $(this).addClass('hide');
             $('.network-btn.hide').removeClass('hide');
+            Lampa.Controller.collectionFocus($('.network-btn').eq(3), Lampa.Activity.active().activity.render());
         });
 
         return moreBtn;
@@ -78,9 +75,6 @@
 
         var networksLine = $(
             '<div class="tmdb-networks">' +
-                '<div class="items-line__head">' +
-                    '<div class="items-line__title">' + Lampa.Lang.translate('tmdb_networks') + '</div>' +
-                '</div>' +
                 '<div class="items-line__body" style="margin-bottom:3em;">' +
                     '<div class="full-descr">' +
                         '<div class="full-descr__left">' +
@@ -151,9 +145,12 @@
 
         $('head').append(
             '<style>' +
-                '.network-logo {background-color:#fff}' +
-                '.network-logo img {height:25px}' +
-                '.network-logo.focus {box-shadow:0 0 0 5px rgba(0, 0, 0, 0.4)}' +
+                '.tmdb-networks {margin-top: -3em}' +
+                '.network-logo {background-color:#fff;position:relative}' +
+                '.network-logo .overlay {position: absolute;top: 0;left: 0;right: 0;bottom: 0;background: rgba(0, 0, 0, 0)}' +
+                '.network-logo img {height:2.5em; padding:0.1em}' +
+                '.network-logo.focus {box-shadow:0 0 0 0.2em rgb(255, 255, 255)}' +
+                '.network-logo.focus .overlay{background: rgba(0, 0, 0, 0.3)}' +
             '</style>'
         );
 
