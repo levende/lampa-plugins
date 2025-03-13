@@ -20,6 +20,11 @@
                 'uk': 'Новинки',
                 'ru': 'Новинки',
             },
+            tmdb_networks_hide: {
+                'en': 'Hide',
+                'uk': 'Сховати',
+                'ru': 'Скрыть',
+            },
         });
     }
 
@@ -43,7 +48,7 @@
         }
 
         networkBtn.on('hover:enter', function () {
-            onNetworkButtonClick(network);
+            onNetworkButtonClick(network, this);
         });
 
         return networkBtn;
@@ -51,19 +56,37 @@
 
     function createMoreButton(hiddenCount) {
         var moreBtn = $(
-            '<div class="tag-count selector">' +
+            '<div class="tag-count selector network-btn network-more">' +
                 '<div class="tag-count__name">' + Lampa.Lang.translate('more') + '</div>' +
                 '<div class="tag-count__count">' + hiddenCount + '</div>' +
             '</div>'
         );
 
         moreBtn.on('hover:enter', function () {
-            $(this).addClass('hide');
             $('.network-btn.hide').removeClass('hide');
-            Lampa.Controller.collectionFocus($('.network-btn').eq(3), Lampa.Activity.active().activity.render());
+            $(this).addClass('hide');
+            Lampa.Controller.collectionFocus($('.network-btn').eq(4), Lampa.Activity.active().activity.render());
         });
 
         return moreBtn;
+    }
+
+    function createHideButton() {
+        var hideBtn = $(
+            '<div class="tag-count selector network-btn hide">' +
+                '<div class="tag-count__name">' + Lampa.Lang.translate('tmdb_networks_hide') + '</div>' +
+            '</div>');
+
+        hideBtn.on('hover:enter', function () {
+            $(this).addClass('hide');
+            $('.network-btn:gt(2)').addClass('hide');
+            
+            var moreBtn = $('.network-more');
+            moreBtn.removeClass('hide');
+            Lampa.Controller.collectionFocus(moreBtn, Lampa.Activity.active().activity.render());
+        });
+
+        return hideBtn;
     }
 
     function renderNetworks(object) {
@@ -87,18 +110,27 @@
 
         var container = $('.full-descr__tags', networksLine);
 
+        var hasMoreBtn = false;
         movie.networks.forEach(function (network, index) {
             container.append(createNetworkButton(network, index, movie.networks.length));
 
             if (movie.networks.length > VISIBLE_NETWORKS_LIMIT && index === VISIBLE_NETWORKS_LIMIT - 1) {
                 container.append(createMoreButton(movie.networks.length - VISIBLE_NETWORKS_LIMIT));
+                hasMoreBtn = true;
             }
         });
+
+        if (hasMoreBtn) {
+            container.append(createHideButton());
+        }
+
+        var btnSize = $('.tag-count', render).eq(0).outerHeight();
+        $('.network-btn', container).css('height', btnSize + 'px');
 
         $('.items-line', render).eq(0).prepend(networksLine);
     }
 
-    function onNetworkButtonClick(network) {
+    function onNetworkButtonClick(network, element) {
         var enabled = Lampa.Controller.enabled().name;
         var menu = [
             {
@@ -120,6 +152,7 @@
             items: menu,
             onBack: function () {
                 Lampa.Controller.toggle(enabled);
+                Lampa.Controller.collectionFocus(element, Lampa.Activity.active().activity.render());
             },
             onSelect: function (action) {
                 Lampa.Activity.push({
@@ -145,12 +178,12 @@
 
         $('head').append(
             '<style>' +
-                '.tmdb-networks {margin-top: -3em}' +
+                '.tmdb-networks {margin-top:-3em}' +
                 '.network-logo {background-color:#fff;position:relative}' +
-                '.network-logo .overlay {position: absolute;top: 0;left: 0;right: 0;bottom: 0;background: rgba(0, 0, 0, 0)}' +
-                '.network-logo img {height:2.5em; padding:0.1em}' +
+                '.network-logo .overlay {position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0, 0, 0, 0)}' +
+                '.network-logo img {padding:0.1em;height:100%}' +
+                '.network-logo.focus .overlay{background:rgba(0, 0, 0, 0.3)}' +
                 '.network-logo.focus {box-shadow:0 0 0 0.2em rgb(255, 255, 255)}' +
-                '.network-logo.focus .overlay{background: rgba(0, 0, 0, 0.3)}' +
             '</style>'
         );
 
