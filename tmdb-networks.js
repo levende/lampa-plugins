@@ -97,22 +97,32 @@
     }
 
     function getMovieProviders(movie, callback) {
-        var countryCode = 'US';
-        var excludeKeywords = ["Free", "Ad", "With Ads", "Free with Ads", "Plex", "Tubi", "Pluto TV"];
-        var maxDisplayPriority = 10;
+        var allowedCountryCodes = ['US', 'RU'];
+        var excludeKeywords = ['Free', 'Ad', 'With Ads', 'Free with Ads', 'Plex', 'Tubi', 'Pluto TV', 'Google Play'];
+        var maxDisplayPriority = 20;
 
         var url = Lampa.TMDB.api('movie/' + movie.id + '/watch/providers?api_key=' + Lampa.TMDB.key());
         $.get(url, function (data) {
 
-            if (!data.results || !data.results[countryCode]) {
+            if (!data.results) {
                 return [];
             }
 
-            var providers = data.results[countryCode].flatrate || []
-                .concat(data.results[countryCode].rent || [])
-                .concat(data.results[countryCode].buy || []);
+            var countryCodes = Object.keys(data.results).filter(function(countryCode) {
+                return allowedCountryCodes.includes(countryCode);
+            });
 
+            var providers = [];
             var uniqueProviders = [];
+
+            countryCodes.forEach(function(countryCode) {
+                var countryProviders = (data.results[countryCode].flatrate || [])
+                    .concat(data.results[countryCode].rent || [])
+                    .concat(data.results[countryCode].buy || []);
+            
+                countryProviders.forEach(function(provider) { provider.country_code = countryCode });
+                providers = providers.concat(countryProviders);
+            });
 
             providers.forEach(function (provider) {
                 if (provider.display_priority > maxDisplayPriority) return;
@@ -131,7 +141,7 @@
                     name: name,
                     logo_path: provider.logo_path,
                     display_priority: provider.display_priority,
-                    country_code: countryCode
+                    country_code: provider.country_code
                 });
             });
 
