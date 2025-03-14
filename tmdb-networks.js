@@ -36,11 +36,11 @@
             networkBtn.append($('<div class="tag-count overlay"></div>'));
             var logo = $('<img/>').attr({
                 src: Lampa.TMDB.image("t/p/w300" + network.logo_path),
-                alt: network.name,
+                alt: network.name
             });
             networkBtn.append(logo);  
         } else {
-            networkBtn.append($('<div class="tag-count__name">' + network.name + '</div>'))
+            networkBtn.append($('<div class="tag-count__name">' + network.name + '</div>'));
         }
 
         if (index >= VISIBLE_NETWORKS_LIMIT) {
@@ -65,7 +65,7 @@
         moreBtn.on('hover:enter', function () {
             $('.network-btn.hide').removeClass('hide');
             $(this).addClass('hide');
-            Lampa.Controller.collectionFocus($('.network-btn').eq(4), Lampa.Activity.active().activity.render());
+            Lampa.Controller.collectionFocus($('.network-btn').eq(VISIBLE_NETWORKS_LIMIT + 1), Lampa.Activity.active().activity.render());
         });
 
         return moreBtn;
@@ -79,7 +79,8 @@
 
         hideBtn.on('hover:enter', function () {
             $(this).addClass('hide');
-            $('.network-btn:gt(2)').addClass('hide');
+            var maxShowedIndex = VISIBLE_NETWORKS_LIMIT - 1;
+            $('.network-btn:gt(' + 2 + ')').addClass('hide');
             
             var moreBtn = $('.network-more');
             moreBtn.removeClass('hide');
