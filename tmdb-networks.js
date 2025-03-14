@@ -2,6 +2,7 @@
     'use strict';
 
     var VISIBLE_NETWORKS_LIMIT = 3;
+    var network = new Lampa.Reguest();
 
     function addLocalization() {
         Lampa.Lang.add({
@@ -102,8 +103,7 @@
         var maxDisplayPriority = 20;
 
         var url = Lampa.TMDB.api('movie/' + movie.id + '/watch/providers?api_key=' + Lampa.TMDB.key());
-        $.get(url, function (data) {
-
+        network.silent(url, function (data) {
             if (!data.results) {
                 return [];
             }
