@@ -80,7 +80,7 @@
         hideBtn.on('hover:enter', function () {
             $(this).addClass('hide');
             var maxShowedIndex = VISIBLE_NETWORKS_LIMIT - 1;
-            $('.network-btn:gt(' + 2 + ')').addClass('hide');
+            $('.network-btn:gt(' + maxShowedIndex + ')').addClass('hide');
             
             var moreBtn = $('.network-more');
             moreBtn.removeClass('hide');
