@@ -2,7 +2,7 @@
     'use strict';
 
     var pluginManifest = {
-        version: '2.0.1',
+        version: '2.0.2',
         author: 'levende',
         docs: 'https://levende.github.io/lampa-plugins/docs/tmdb-networks',
         contact: 'https://t.me/levende'
@@ -437,7 +437,7 @@
                 default: settings['platfroms_' + type + '_list_max_visible'],
             },
             field: {
-                name: Lampa.Lang.translate('platforms_list_limit'),
+                name: Lampa.Lang.translate('platfroms_list_limit')
             },
             onChange: initSettings
         });
@@ -463,7 +463,7 @@
     }
 
     function addSettings() {
-        Lampa.Template.add('settings_platforms', `<div></div>`);
+        Lampa.Template.add('settings_platforms', '<div></div>');
 
         Lampa.SettingsApi.addParam({
             component: 'interface',
