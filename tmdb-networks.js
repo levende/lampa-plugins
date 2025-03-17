@@ -31,8 +31,6 @@
         platfroms_movie_extra_btn_mode: -1
     };
 
-    window.foo_settings = settings;
-
     var network = new Lampa.Reguest();
 
     function addLocalization() {
