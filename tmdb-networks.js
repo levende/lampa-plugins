@@ -2,7 +2,7 @@
     'use strict';
 
     var pluginManifest = {
-        version: '2.0.2',
+        version: '2.0.3',
         author: 'levende',
         docs: 'https://levende.github.io/lampa-plugins/docs/tmdb-networks',
         contact: 'https://t.me/levende'
@@ -143,7 +143,7 @@
         return networkBtn;
     }
 
-    function createMoreButton(hiddenCount, type) {
+    function createMoreButton(hiddenCount, type, container) {
         var moreBtn = $(
             '<div class="tag-count selector network-btn network-more">' +
                 '<div class="tag-count__name">' + Lampa.Lang.translate('more') + '</div>' +
@@ -156,7 +156,7 @@
         moreBtn.on('hover:enter', function () {
             $('.network-btn.hide').removeClass('hide');
             $(this).addClass('hide');
-            Lampa.Controller.collectionFocus($('.network-btn').eq(limit + 1), Lampa.Activity.active().activity.render());
+            Lampa.Controller.collectionFocus($('.network-btn', container).eq(limit + 1), Lampa.Activity.active().activity.render());
         });
 
         return moreBtn;
@@ -172,7 +172,7 @@
 
         hideBtn.on('hover:enter', function () {
             $(this).addClass('hide');
-            $('.network-btn:gt(' + (limit - 1) + ')').addClass('hide');
+            $('.network-btn:not(.button--plaftorms):gt(' + (limit - 1) + ')').addClass('hide');
 
             var moreBtn = $('.network-more');
             moreBtn.removeClass('hide');
@@ -263,7 +263,7 @@
             case EXTRA_BTN_DISPLAY_MODE.LOGO:
             case EXTRA_BTN_DISPLAY_MODE.TEXT: {
                 btn = createNetworkButton(networks[0], 0, type, displayMode, 1);
-                btn.removeClass('tag-count').addClass('full-start__button');
+                btn.removeClass('tag-count').addClass('full-start__button').addClass('button--plaftorms');
                 btn.css('height', $('.full-start__button', render).first().outerHeight() + 'px');
                 break;
             }
@@ -339,7 +339,7 @@
                 container.append(createNetworkButton(network, index, type, displayMode, displayLimit));
 
                 if (networks.length > displayLimit && index === displayLimit - 1) {
-                    container.append(createMoreButton(networks.length - displayLimit, type));
+                    container.append(createMoreButton(networks.length - displayLimit, type, container));
                     hasMoreBtn = true;
                 }
             });
