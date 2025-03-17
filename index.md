@@ -14,6 +14,6 @@ Welcome to the page! This page contains a collection of plugins designed to enha
 
 ### 3. **TMDB Networks**
 - **[https://levende.github.io/lampa-plugins/tmdb-networks.js](https://levende.github.io/lampa-plugins/tmdb-networks.js)**
-- **Description**
+- **[Description](https://levende.github.io/lampa-plugins/docs/tmdb-networks)**
 
 *Note: Please ensure you follow the installation instructions carefully and review the plugin description for any important details before use.*

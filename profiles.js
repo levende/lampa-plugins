@@ -187,6 +187,13 @@
             window.profiles_plugin = true;
             logger.info('Start', pluginManifest);
 
+            window.addEventListener('error', function (e) {
+                if (e.filename.includes('profiles.js')) {
+                    var stack = (e.error && e.error.stack ? e.error.stack : e.stack || '').split('\n').join('<br>');
+                    logger.error('JS ERROR', e.filename, (e.error || e).message, stack);
+                }
+            });
+
             var stateSvc = new StateService();
             var wsSvc = new WebSocketService();
 
