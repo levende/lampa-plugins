@@ -2,7 +2,7 @@
     'use strict';
 
     var pluginManifest = {
-        version: '2.0.0',
+        version: '2.0.1',
         author: 'levende',
         docs: 'https://levende.github.io/lampa-plugins/docs/profiles',
         contact: 'https://t.me/levende',

@@ -2,7 +2,7 @@
     'use strict';
 
     var pluginManifest = {
-        version: '2.0.0',
+        version: '2.0.1',
         author: 'levende',
         docs: 'https://levende.github.io/lampa-plugins/docs/tmdb-networks',
         contact: 'https://t.me/levende'
@@ -437,7 +437,7 @@
                 default: settings['platfroms_' + type + '_list_max_visible'],
             },
             field: {
-                name: Lampa.Lang.translate('platforms_list_limig'),
+                name: Lampa.Lang.translate('platforms_list_limit'),
             },
             onChange: initSettings
         });
