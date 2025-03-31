@@ -16,4 +16,8 @@ Welcome to the page! This page contains a collection of plugins designed to enha
 - **[https://levende.github.io/lampa-plugins/tmdb-networks.js](https://levende.github.io/lampa-plugins/tmdb-networks.js)**
 - **[Description](https://levende.github.io/lampa-plugins/docs/tmdb-networks)**
 
+### 4. **Custom Favorites**
+- **[https://levende.github.io/lampa-plugins/custom-favs.js](https://levende.github.io/lampa-plugins/custom-favs.js)**
+- **[Description](https://levende.github.io/lampa-plugins/docs/custom-favs)**
+
 *Note: Please ensure you follow the installation instructions carefully and review the plugin description for any important details before use.*

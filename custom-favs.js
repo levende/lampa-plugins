@@ -245,6 +245,7 @@
                                 try {
                                     customFavorite.renameType(type.name, value);
                                     $register.find('.register__name').text(value);
+                                    type.name = value;
                                 } finally {
                                     Lampa.Controller.toggle(controllerName);
                                     Lampa.Controller.collectionFocus($register, $render);
