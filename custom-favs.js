@@ -191,6 +191,8 @@
         $register.find('.register__name').text(type.name).addClass(customTypeCssClass);
         $register.find('.register__counter').text(type.counter || 0).addClass(customTypeCssClass);
 
+        var $render = Lampa.Activity.active().activity.render();
+
         $register.on('hover:long', function () {
             var menu = [
                 {
@@ -214,46 +216,44 @@
                     Lampa.Controller.toggle('content');
                 },
                 onSelect: function (item) {
-                    try {
-                        switch (item.action) {
-                            case 'remove': {
+                    switch (item.action) {
+                        case 'remove': {
+                            try {
                                 customFavorite.removeType(type.name);
                                 $register.remove();
-                                break;
-                            }
-                            case 'rename': {
-                                var inputOptions = {
-                                    title: Lampa.Lang.translate('filter_set_name'),
-                                    value: type.name,
-                                    free: true,
-                                    nosave: true
-                                };
 
-                                Lampa.Input.edit(inputOptions, function (value) {
-                                    if (value === '') {
-                                        Lampa.Controller.toggle('content');
-                                        return;
-                                    };
-
-                                    customFavorite.renameType(type.name, value);
-                                    $register.find('.register__name').text(value);
-
-                                    Lampa.Controller.toggle(controllerName);
-                                    Lampa.Controller.toggle('content');
-                                });
-
+                                Lampa.Controller.toggle(controllerName);
+                                Lampa.Controller.toggle('content');
+                            } finally {
                                 break;
                             }
                         }
-                    } finally {
-                        Lampa.Controller.toggle(controllerName);
-                        Lampa.Controller.toggle('content');
+                        case 'rename': {
+                            var inputOptions = {
+                                title: Lampa.Lang.translate('filter_set_name'),
+                                value: type.name,
+                                free: true,
+                                nosave: true
+                            };
+
+                            Lampa.Input.edit(inputOptions, function (value) {
+                                if (value === '') {
+                                    Lampa.Controller.toggle('content');
+                                    return;
+                                };
+
+                                try {
+                                    customFavorite.renameType(type.name, value);
+                                    $register.find('.register__name').text(value);
+                                } finally {
+                                    Lampa.Controller.toggle(controllerName);
+                                    Lampa.Controller.collectionFocus($register, $render);
+                                }
+                            });
+
+                            break;
+                        }
                     }
-
-
-
-                    Lampa.Controller.toggle(controllerName);
-                    Lampa.Controller.toggle('content');
                 }
             });
         });
@@ -268,7 +268,7 @@
             });
         });
 
-        $('.register:first').after($register);
+        $('.register:first', $render).after($register);
         return $register;
     }
 
