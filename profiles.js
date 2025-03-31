@@ -335,12 +335,6 @@
                 }
             });
 
-            var favFull = Lampa.Favorite.full();
-            Object.keys(favFull).forEach(function(favKey) {
-                if (Array.isArray(favFull[favKey])) {
-                    Lampa.Favorite.clear(favKey);
-                }
-            });
             logger.debug('Profile data has been backed up for profile', profile);
         }
 
@@ -352,6 +346,8 @@
                     Lampa.Storage.set(field, backupValue);
                 }
             });
+            
+            Lampa.Favorite.init();
             logger.debug('Profile data has been restored for profile', profile);
         }
 
@@ -370,15 +366,8 @@
 
         function reset() {
             state.sync.keys.forEach(localStorage.removeItem.bind(localStorage));
-            
-            var favFull = Lampa.Favorite.full();
-            Object.keys(favFull).forEach(function(favKey) {
-                if (Array.isArray(favFull[favKey])) {
-                    Lampa.Favorite.clear(favKey);
-                }
-            });
-
             Lampa.Storage.set('favorite', {});
+            Lampa.Favorite.init();
 
             state.sync.timestamps.forEach(function (timestamp) {
                 Lampa.Storage.set(timestamp, 0);
