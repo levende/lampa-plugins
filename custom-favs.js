@@ -419,7 +419,7 @@
 
         window.custom_favorites = true;
 
-        Lampa.Utils.putScript(['https://levende.github.io/lampa-plugins/listner-extensions.js'], function () {
+        Lampa.Utils.putScript(['https://levende.github.io/lampa-plugins/listener-extensions.js'], function () {
             Lampa.Listener.follow('card', function (event) {
                 if (event.type !== 'build') {
                     return;

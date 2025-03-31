@@ -2,11 +2,11 @@
     'use strict';
 
     function start() {
-        if (window.lampa_listner_extensions) {
+        if (window.lampa_listener_extensions) {
             return;
         }
 
-        window.lampa_listner_extensions = true;
+        window.lampa_listener_extensions = true;
 
         Object.defineProperty(window.Lampa.Card.prototype, 'build', {
             get: function () {
