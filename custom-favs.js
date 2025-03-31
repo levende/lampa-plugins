@@ -288,7 +288,7 @@
 
         $('.register:first').before($register);
 
-        $register.on('hover:enter hover:click hover:touch', function () {
+        $register.on('hover:enter', function () {
             var inputOptions = {
                 title: Lampa.Lang.translate('filter_set_name'),
                 value: '',
