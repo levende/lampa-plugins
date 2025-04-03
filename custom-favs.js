@@ -645,12 +645,13 @@
     }
 
     if (window.appready) {
-        setTimeout(start, 200);
+        start();
     } else {
-        var onAppReady = function (event) {
-            if (event.type !== 'ready') return;
-            setTimeout(start, 200);
-        };
-        Lampa.Listener.follow('app', onAppReady);
+        Lampa.Listener.follow('app', function (event) {
+            if (event.type === 'ready') 
+            {
+                start();
+            }
+        });
     }
 })();
