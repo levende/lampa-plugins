@@ -404,7 +404,7 @@
         var mediaTypes = ['movies', 'tv'];
         var lines = [];
 
-        Object.keys(favorite.customTypes).forEach(function (typeName) {
+        Object.keys(favorite.customTypes).reverse().forEach(function (typeName) {
             var typeUid = favorite.customTypes[typeName];
             var typeList = favorite[typeUid] || [];
 
@@ -626,7 +626,7 @@
 
                 favoritePageSvc.renderLines();
 
-                Object.keys(favorite.customTypes).forEach(function (typeName) {
+                Object.keys(favorite.customTypes).reverse().forEach(function (typeName) {
                     var typeUid = favorite.customTypes[typeName];
                     var typeList = favorite[typeUid] || [];
                     var typeCounter = typeList.length;
