@@ -1,6 +1,92 @@
 (function () {
     'use strict';
 
+    function CustomFavoriteFolder(data) {
+        var params = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+        this.data = data;
+        this.params = params;
+        this.card = this.data.length ? this.data[0] : {};
+
+        this.create = function () {
+            var self = this;
+            var _this = this;
+
+            this.folder = Lampa.Template.js('bookmarks_folder');
+            this.folder.querySelector('.bookmarks-folder__title').innerText = Lampa.Lang.translate('menu_' + params.media);
+            this.folder.querySelector('.bookmarks-folder__num').innerText = this.data.length;
+            this.folder.addEventListener('hover:focus', function () {
+                if (self.onFocus) {
+                    self.onFocus(self.folder, self.card);
+                }
+            });
+            this.folder.addEventListener('hover:touch', function () {
+                if (self.onTouch) {
+                    self.onTouch(self.folder, self.card);
+                }
+            });
+            this.folder.addEventListener('hover:hover', function () {
+                if (self.onHover) {
+                    self.onHover(self.folder, self.card);
+                }
+            });
+            this.folder.addEventListener('hover:enter', function () {
+                Lampa.Activity.push({
+                    url: '',
+                    title: params.title + ' - ' + Lampa.Lang.translate('menu_' + params.media),
+                    component: 'favorite',
+                    type: params.category,
+                    filter: params.media,
+                    page: 1
+                });
+            });
+            this.folder.addEventListener('visible', this.visible.bind(this));
+        };
+
+        this.image = function (src, i) {
+            var self = this;
+
+            var img = document.createElement('img');
+            img.addClass('card__img');
+            img.addClass('i-' + i);
+
+            img.onload = function () {
+                self.folder.classList.add('card--loaded');
+            };
+
+            img.onerror = function () {
+                img.src = './img/img_broken.svg';
+            };
+
+            this.folder.querySelector('.bookmarks-folder__body').append(img);
+            img.src = src;
+        };
+
+        this.visible = function () {
+            var self = this;
+
+            var filtred = this.data.filter(function (a) {
+                return a.poster_path;
+            }).slice(0, 3);
+            filtred.forEach(function (a, i) {
+                self.image(Lampa.Api.img(a.poster_path), i);
+            });
+            if (filtred.length == 0) {
+                this.image('./img/img_load.svg');
+            }
+            if (this.onVisible) {
+                this.onVisible(this.folder, data);
+            }
+        };
+
+        this.destroy = function () {
+            this.folder.remove();
+        };
+
+        this.render = function (js) {
+            return js ? this.folder : $(this.folder);
+        };
+    }
+
     function CustomFavorite() {
         var allCustomFavs = [];
 
@@ -211,7 +297,6 @@
                 title: Lampa.Lang.translate('title_action'),
                 items: menu,
                 onBack: function () {
-                    debugger;
                     Lampa.Controller.toggle(controllerName);
                     Lampa.Controller.toggle('content');
                 },
@@ -310,6 +395,52 @@
                     Lampa.Controller.toggle('content');
                 }
             });
+        });
+    }
+
+    FavoritePageService.prototype.renderLines = function () {
+        var object = Lampa.Activity.active();
+        var favorite = customFavorite.getFavorite();
+        var mediaTypes = ['movies', 'tv'];
+        var lines = [];
+
+        Object.keys(favorite.customTypes).forEach(function (typeName) {
+            var typeUid = favorite.customTypes[typeName];
+            var typeList = favorite[typeUid] || [];
+
+            var typeCards = favorite.card.filter(function (card) { return typeList.indexOf(card.id) !== -1 });
+            var lineItems = Lampa.Arrays.clone(typeCards.slice(0, 20));
+
+            var i = 0;
+            mediaTypes.forEach(function (m) {
+                var filter = Lampa.Utils.filterCardsByType(typeCards, m);
+
+                if (filter.length) {
+                    Lampa.Arrays.insert(lineItems, i, {
+                        cardClass: function cardClass() {
+                            return new CustomFavoriteFolder(filter, {
+                                title: typeName,
+                                category: typeUid,
+                                media: m
+                            });
+                        }
+                    });
+                    i++;
+                }
+            });
+
+            lineItems = lineItems.slice(0, 20);
+            lineItems.forEach(function(item) {
+                item.ready = false;
+            });
+
+            if (lineItems.length > 0) {
+                object.activity.component().append({
+                    title: typeName,
+                    results: lineItems,
+                    type: typeUid
+                });
+            }
         });
     }
 
@@ -493,6 +624,8 @@
                 favoritePageSvc.renderAddButton();
                 var favorite = customFavorite.getFavorite();
 
+                favoritePageSvc.renderLines();
+
                 Object.keys(favorite.customTypes).forEach(function (typeName) {
                     var typeUid = favorite.customTypes[typeName];
                     var typeList = favorite[typeUid] || [];
@@ -503,9 +636,10 @@
                         uid: typeUid,
                         counter: typeCounter
                     });
-                })
+                });
 
-                Lampa.Controller.toggle('content');
+
+                Lampa.Activity.active().activity.toggle();
             }
         });
     }
