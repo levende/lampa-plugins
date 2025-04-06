@@ -14,8 +14,9 @@
             }
 
             var active = Lampa.Activity.active();
+            var componentName = active.component.toLowerCase();
 
-            if (active.component.toLowerCase() !== 'online') {
+            if (componentName !== 'online' && componentName !== 'lampac' && componentName.indexOf('bwa') !== 0) {
                 return;
             }
 
