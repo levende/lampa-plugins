@@ -23,4 +23,7 @@ Welcome to the page! This page contains a collection of plugins designed to enha
 ### 5. **Lampac Source Filter**
 - **[lampac-src-filter.js](https://levende.github.io/lampa-plugins/lampac-src-filter.js)**
 
+### 6. **Anti DMCA**
+- **[anti-dmca.js](https://levende.github.io/lampa-plugins/anti-dmca.js)**
+
 *Note: Please ensure you follow the installation instructions carefully and review the plugin description for any important details before use.*
