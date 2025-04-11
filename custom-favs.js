@@ -321,7 +321,7 @@
                             };
 
                             Lampa.Input.edit(inputOptions, function (value) {
-                                if (value === '') {
+                                if (value === '' || type.name == value) {
                                     Lampa.Controller.toggle('content');
                                     return;
                                 };
