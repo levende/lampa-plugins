@@ -176,6 +176,19 @@
 
         window.bookmarks_sync = true;
 
+        Lampa.Lang.add({
+            bookmarks_sync_title: {
+                en: 'CUB Synchronization',
+                ru: 'CUB Синхронизация',
+                uk: 'CUB Синхронізація'
+            },
+            bookmarks_sync_descr: {
+                en: 'Synchronization of CUB bookmarks and history',
+                ru: 'Синхронизация закладок и истории CUB',
+                uk: 'Синхронізація закладок і історії CUB'
+            }
+        });
+
         Lampa.SettingsApi.addComponent({
             component: 'bookmarks_sync',
             name: 'Bookmarks',
@@ -197,8 +210,8 @@
                 type: 'static',
             },
             field: {
-                name: 'Sync',
-                description: 'Synchronizes bookmarks and history with CUB service profile'
+                name: Lampa.Lang.translate('bookmarks_sync_title'),
+                description: Lampa.Lang.translate('bookmarks_sync_descr')
             },
             onRender: function (item) {
                 item.on('hover:enter', function () {

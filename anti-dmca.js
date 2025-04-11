@@ -17,9 +17,9 @@
 
                 var active = Lampa.Activity.active();
                 active.source = 'tmdb';
-                Lampa.Storage.set('source', 'tmdb');
+                Lampa.Storage.set('source', 'tmdb', true);
                 Lampa.Activity.replace(active);
-                Lampa.Storage.set('source', defaultSource);
+                Lampa.Storage.set('source', defaultSource, true);
             }
         });
     }

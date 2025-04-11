@@ -9,7 +9,6 @@
 
         this.create = function () {
             var self = this;
-            var _this = this;
 
             this.folder = Lampa.Template.js('bookmarks_folder');
             this.folder.querySelector('.bookmarks-folder__title').innerText = Lampa.Lang.translate('menu_' + params.media);

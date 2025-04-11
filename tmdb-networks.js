@@ -582,13 +582,12 @@
     }
 
     if (window.appready) {
-        setTimeout(startPlugin, 500);
+        startPlugin();
     } else {
-        var onAppReady = function (event) {
-            if (event.type !== 'ready') return;
-            Lampa.Listener.remove('app', onAppReady);
-            setTimeout(startPlugin, 500);
-        };
-        Lampa.Listener.follow('app', onAppReady);
+        Lampa.Listener.follow('app', function (event) {
+            if (event.type === 'ready') {
+                startPlugin();
+            }
+        });
     }
 })();
