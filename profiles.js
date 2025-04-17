@@ -2,7 +2,7 @@
     'use strict';
 
     var pluginManifest = {
-        version: '2.0.2',
+        version: '2.1.0',
         author: 'levende',
         docs: 'https://levende.github.io/lampa-plugins/docs/profiles',
         contact: 'https://t.me/levende',
@@ -13,6 +13,52 @@
         profiles: [],
         defaultProfileIcon: 'https://levende.github.io/lampa-plugins/assets/profile_icon.png',
         showSettings: true,
+        syncEnabled: true
+    };
+
+    var Utils = {
+        Array: {
+            find: function (array, predicate) {
+                for (var i = 0; i < array.length; i++) {
+                    if (predicate(array[i], i, array)) {
+                        return array[i];
+                    }
+                }
+                return null;
+            },
+            some: function (array, predicate) {
+                for (var i = 0; i < array.length; i++) {
+                    if (predicate(array[i], i, array)) {
+                        return true;
+                    }
+                }
+                return false;
+            },
+        },
+        Date: {
+            now: function () {
+                return new Date().getTime();
+            }
+        },
+        Object: {
+            keys: function (obj) {
+                var keys = [];
+                for (var key in obj) {
+                    if (obj.hasOwnProperty(key)) {
+                        keys.push(key);
+                    }
+                }
+                return keys;
+            }
+        },
+        CustomEvent: {
+            get: function (event, params) {
+                params = params || { bubbles: false, cancelable: false, detail: undefined };
+                var evt = document.createEvent('CustomEvent');
+                evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
+                return evt;
+            }
+        }
     };
 
     function Logger() {
@@ -64,7 +110,7 @@
     function Waiter() {
         this.wait = function (options) {
             logger.debug('Wait', { interval: options.interval, timeout: options.timeout });
-            var start = Date.now();
+            var start = Utils.Date.now();
             var callback = options.callback || function () { };
 
             function checkCondition() {
@@ -73,7 +119,7 @@
                     return;
                 }
 
-                if (Date.now() - start >= options.timeout) {
+                if (Utils.Date.now() - start >= options.timeout) {
                     callback(false);
                     return;
                 }
@@ -113,7 +159,7 @@
 
             function isConnectionEvent(value) {
                 var connectionTypes = self.connectionEventTypes;
-                return Object.keys(connectionTypes).some(function (type) {
+                return Utils.Array.some(Utils.Object.keys(connectionTypes), function (type) {
                     return connectionTypes[type] == value;
                 });
             }
@@ -148,18 +194,18 @@
         };
 
         var externalSettings = window.profiles_settings;
-        var hasExternalSettings = !!externalSettings 
+        var hasExternalSettings = !!externalSettings
             && externalSettings === 'object'
             && !Array.isArray(externalSettings)
 
-        Object.keys(injectableSettings).forEach(function (key) {
+        Utils.Object.keys(injectableSettings).forEach(function (key) {
             self[key] = hasExternalSettings && externalSettings.hasOwnProperty(key)
                 ? externalSettings[key]
                 : injectableSettings[key];
         });
 
         if (!!externalSettings && typeof externalSettings === 'object' && !Array.isArray(externalSettings)) {
-            Object.keys(injectableSettings).forEach(function (key) {
+            Utils.Object.keys(injectableSettings).forEach(function (key) {
                 self[key] = externalSettings.hasOwnProperty(key)
                     ? externalSettings[key]
                     : injectableSettings[key];
@@ -167,9 +213,9 @@
         }
 
         self.getCurrentProfile = function () {
-            return self.profiles.filter(function (profile) {
+            return Utils.Array.find(self.profiles, function (profile) {
                 return profile.selected;
-            })[0];
+            });
         }
 
         self.isRefreshType = function (refreshType) {
@@ -213,7 +259,7 @@
 
             var profileButton = $(
                 '<div class="head__action selector open--profile">' +
-                    '<img id="user_profile_icon" src="' + currentProfile.icon + '"/>' +
+                '<img id="user_profile_icon" src="' + currentProfile.icon + '"/>' +
                 '</div>');
 
             $('.open--profile').before(profileButton).remove();
@@ -251,7 +297,7 @@
 
                             $('#user_profile_icon').attr('src', item.profile.icon);
 
-                            var switchFn = state.online ? switchOnlineProfile : switchOfflineProfile;
+                            var switchFn = state.online && state.syncEnabled ? switchOnlineProfile : switchOfflineProfile;
 
                             Lampa.Loading.start();
                             switchFn(
@@ -292,9 +338,10 @@
                 logger.debug('Sync with new profile');
                 window.sync_disable = false;
 
-                document.dispatchEvent(new CustomEvent('lwsEvent', {
+                var event = Utils.CustomEvent.get('lwsEvent', {
                     detail: { name: 'system', data: ws.connectionEventTypes.RECONNECTED, src: ws.pluginSrc },
-                }));
+                });
+                document.dispatchEvent(event);
             }, 200);
 
             waiter.wait({
@@ -346,7 +393,7 @@
                     Lampa.Storage.set(field, backupValue);
                 }
             });
-            
+
             Lampa.Favorite.init();
             logger.debug('Profile data has been restored for profile', profile);
         }
@@ -484,7 +531,7 @@
         };
 
         function syncScriptUsed() {
-            var isSyncPluginEnabled = Lampa.Storage.get('plugins', '[]').some(function (plugin) {
+            var isSyncPluginEnabled = Utils.Array.some(Lampa.Storage.get('plugins', '[]'), function (plugin) {
                 return plugin.status == 1 && isSyncScript(plugin.url);
             });
 
@@ -492,9 +539,11 @@
                 return true;
             }
 
-            return $.map($('script'), function (script) {
+            var scripts = $.map($('script'), function (script) {
                 return $(script).attr('src') || '';
-            }).some(function (src) {
+            });
+
+            return Utils.Array.some(scripts, function (src) {
                 return isSyncScript(src);
             });
 
@@ -514,6 +563,7 @@
                 return;
             }
 
+            window.sync_disable = !state.syncEnabled;
             configureListeners();
 
             testBackendAccess(function (online) {
@@ -528,9 +578,9 @@
                         return;
                     }
 
-                    var currentProfile = state.profiles.filter(function (profile) {
+                    var currentProfile = Utils.Array.find(state.profiles, function (profile) {
                         return profile.selected;
-                    })[0];
+                    });
 
                     if (!currentProfile) {
                         currentProfile = state.profiles[0];
@@ -541,7 +591,7 @@
 
                     notifySvc.notify(currentProfile, 'changed');
 
-                    if (!syncScriptUsed() && state.online) {
+                    if (state.online && state.syncEnabled && !syncScriptUsed()) {
                         var scriptPath = state.host + '/sync.js';
                         Lampa.Utils.putScriptAsync([scriptPath], function () {
                             logger.debug('The script has been added to the app', scriptPath);
@@ -555,6 +605,7 @@
                         wsConnected: ws.connected,
                         host: state.host,
                         online: state.online,
+                        syncEnabled: state.syncEnabled,
                         profileId: state.syncProfileId,
                         profiles: state.profiles,
                     })
@@ -622,11 +673,11 @@
             var html =
                 '<p>' + Lampa.Lang.translate('lampac_profiles_plugin_descr') + '</p>' +
                 '<div style="width: 65%; float: left;">' +
-                    '<p><span class="account-add-device__site">' + Lampa.Lang.translate('title_author') + '</span> ' + pluginManifest.author + '</p>' +
-                    '<p><span class="account-add-device__site">' + Lampa.Lang.translate('about_version') + '</span> '+ pluginManifest.version + '</p>' +
+                '<p><span class="account-add-device__site">' + Lampa.Lang.translate('title_author') + '</span> ' + pluginManifest.author + '</p>' +
+                '<p><span class="account-add-device__site">' + Lampa.Lang.translate('about_version') + '</span> ' + pluginManifest.version + '</p>' +
                 '</div>' +
                 '<div style="width: 30%; float: right; text-align: center;">' +
-                    '<img src="https://quickchart.io/qr?text=' + pluginManifest.docs + '&size=200" alt="Documentation"/>' +
+                '<img src="https://quickchart.io/qr?text=' + pluginManifest.docs + '&size=200" alt="Documentation"/>' +
                 '</div>' +
                 '<div style="clear: both;"></div>';
 
