@@ -2,7 +2,7 @@
     'use strict';
 
     var pluginManifest = {
-        version: '2.3.0',
+        version: '2.3.1',
         author: 'levende',
         docs: 'https://levende.github.io/lampa-plugins/docs/profiles',
         contact: 'https://t.me/levende',
@@ -14,7 +14,8 @@
         defaultProfileIcon: 'https://levende.github.io/lampa-plugins/assets/profile_icon.png',
         showSettings: true,
         syncEnabled: true,
-        broadcastEnabled: true
+        broadcastEnabled: true,
+        broadcastScanAll: false
     };
 
     var Utils = {
@@ -224,7 +225,7 @@
             addBroadcastButton();
 
             document.addEventListener('lwsEvent', function (event) {
-                if (event.detail.name === 'profiles_broadcast_discovery' && event.detail.data === state.syncProfileId) {
+                if (event.detail.name === 'profiles_broadcast_discovery' && (state.broadcastScanAll || event.detail.data === state.syncProfileId)) {
                     var deviceInfo = Utils.Device.getInfo();
                     window.lwsEvent.send('profiles_broadcast_discovery_response', JSON.stringify(deviceInfo));
                 }
@@ -301,16 +302,24 @@
 
             var $list = template.find('.broadcast__devices');
             $list.empty();
-            var emptyList = true;
+            var deviceList = [];
 
             template.find('.about').remove();
 
             document.addEventListener('lwsEvent', handleDiscoveryResponse);
             window.lwsEvent.send('profiles_broadcast_discovery', state.syncProfileId);
 
+            var interval = 500;
+            var duration = 3000;
+
+            var timer = setInterval(function () {
+                window.lwsEvent.send('profiles_broadcast_discovery', state.syncProfileId);
+            }, interval);
+
             setTimeout(function () {
+                clearInterval(timer);
                 document.removeEventListener('lwsEvent', handleDiscoveryResponse);
-            }, 4000);
+            }, duration);
 
             Lampa.Modal.open({
                 title: '',
@@ -327,6 +336,11 @@
             function handleDiscoveryResponse(event) {
                 if (event.detail.name === 'profiles_broadcast_discovery_response') {
                     var device = JSON.parse(event.detail.data);
+
+                    if (deviceList.indexOf(device.wsConnectionId) >= 0) {
+                        return;
+                    }
+
                     var item = $('<div class="broadcast__device selector">' + device.name + '</div>');
 
                     item.on('hover:enter', function () {
@@ -338,10 +352,11 @@
                     });
                     $list.append(item);
 
-                    if (emptyList) {
+                    if (deviceList.length === 0) {
                         Lampa.Modal.toggle(item[0]);
-                        emptyList = true;
                     }
+
+                    deviceList.push(device.wsConnectionId);
                 }
             }
         }
