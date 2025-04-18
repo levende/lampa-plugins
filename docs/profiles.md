@@ -6,6 +6,7 @@ The plugin enables profile management in the Lampa app without requiring the **[
 ## Features
 - **Independent Profile Management**: Add and manage profiles in the Lampa app without relying on the CUB service.
 - **Flexible Profile Configuration**: Customize profiles with various settings to fit your needs.
+- **Broadcasting**: Broadcasting functions using a self-hosted lampac server
 - **Soft Refresh**: Switch profiles without restarting the app, ensuring a smooth experience.
 - **Integration with Other Plugins**: Extend functionality by integrating with third-party plugins.
 
@@ -93,6 +94,7 @@ The plugin supports pre-configuration of certain settings. These configurations 
 | `defaultProfileIcon`  |`https://levende.github.io/lampa-plugins/assets/profile_icon.png`           | The picture that will be applied for profiles without icon field |
 | `showSettings`        |`true`           | A boolean flag indicating whether the **Profiles plugin** settings should be added in the application settings.
 | `syncEnabled`        |`true`           | A boolean flag indicating whether if profile synchronization is enabled
+| `broadcastEnabled`        |`true`           | broadcasting between devices with the same profile is enabled.
 
 
 Sample code for a plugin that adds profiles to the application without allowing users to change settings (can be used even in the standalone Lampa application):

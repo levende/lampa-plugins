@@ -188,11 +188,11 @@
         self.pluginSrc = 'profiles.js';
         self.connected = !!window.lwsEvent && window.lwsEvent.init;
 
-        self.connectionEventTypes = Object.freeze({
+        self.connectionEventTypes = {
             CONNECTED: "connected",
             RECONNECTED: "reconnected",
-            CLOSED: "onclose",
-        });
+            CLOSED: "onclose"
+        };
 
         document.addEventListener('lwsEvent', function (event) {
             if (!event.detail) return;
