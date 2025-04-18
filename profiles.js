@@ -2,7 +2,7 @@
     'use strict';
 
     var pluginManifest = {
-        version: '2.1.0',
+        version: '2.2.0',
         author: 'levende',
         docs: 'https://levende.github.io/lampa-plugins/docs/profiles',
         contact: 'https://t.me/levende',
@@ -13,10 +13,56 @@
         profiles: [],
         defaultProfileIcon: 'https://levende.github.io/lampa-plugins/assets/profile_icon.png',
         showSettings: true,
-        syncEnabled: true
+        syncEnabled: true,
+        broadcastEnabled: true
     };
 
     var Utils = {
+        Device: {
+            extractName(userAgent) {
+                userAgent = userAgent || '';
+                var deviceDetails = userAgent.match(/\((.*?)\)/);
+                deviceDetails = deviceDetails ? deviceDetails[1] : 'Unknown Details';
+
+                var platform = Lampa.Platform.screen;
+
+                var deviceMap = [
+                    { re: /Android.*?(TV|Television)/, name: 'Android TV' },
+                    { re: /Apple.*?(TV|AppleTV)/, name: 'Apple TV' },
+                    { re: /WebOS|LG|Samsung|Tizen|Smart-TV|Smart|Smart TV|VIDAA|Hisense/, name: 'Smart TV', tv: true },
+                    { re: /Android/, name: 'Android Device' },
+                    { re: /iPhone/, name: 'iPhone' },
+                    { re: /iPad/, name: platform('mobile') ? 'iPad' : 'Mac Device' },
+                    { re: /Macintosh/, name: 'Mac Device' },
+                    { re: /iPod/, name: 'iPod' },
+                    { re: /Windows/, name: 'Windows PC' }
+                ];
+
+                for (var i = 0; i < deviceMap.length; i++) {
+                    var device = deviceMap[i];
+                    if (device.re.test(userAgent) && (!device.tv || platform('tv'))) {
+                        return device.name + ' - (' + deviceDetails + ')';
+                    }
+                }
+
+                return 'Unknown Device - (' + deviceDetails + ')';
+            },
+            getInfo: function () {
+                var userAgent = navigator.userAgent || '';
+                var deviceName = this.extractName(userAgent);
+
+                var deviceInfo = {
+                    name: deviceName,
+                    userAgent: userAgent
+                };
+
+                if (lwsEvent && lwsEvent.connectionId) {
+                    deviceInfo.wsConnectionId = lwsEvent.connectionId;
+                }
+
+                return deviceInfo;
+            }
+        },
         Array: {
             find: function (array, predicate) {
                 for (var i = 0; i < array.length; i++) {
@@ -154,6 +200,9 @@
             var eventDetail = event.detail;
             if (eventDetail.name === 'system' && eventDetail.src !== self.pluginSrc && isConnectionEvent(eventDetail.data)) {
                 self.connected = eventDetail.data === 'connected';
+                Lampa.Listener.send('lws_connect', {
+                    connected: self.connected
+                });
                 logger.debug('lws connection changed: ' + self.connected);
             }
 
@@ -164,6 +213,112 @@
                 });
             }
         });
+    }
+
+    function BroadcastService(ws, state) {
+        var self = this;
+
+        var $broadcastBtn = $('<div class="head__action head__settings selector open--broadcast-lampac"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1.04272 7.22978V6.76392C1.04272 4.00249 3.2813 1.76392 6.04272 1.76392H17.7877C20.5491 1.76392 22.7877 4.00249 22.7877 6.76392V17.2999C22.7877 20.0613 20.5491 22.2999 17.7877 22.2999H15.8387" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></path><circle cx="6.69829" cy="16.6443" r="5.65556" fill="currentColor"></circle></svg></div>');
+
+        self.init = function () {
+            addBroadcastButton();
+
+            document.addEventListener('lwsEvent', function (event) {
+                if (event.detail.name === 'profiles_broadcast_discovery' && event.detail.data === state.syncProfileId) {
+                    var deviceInfo = Utils.Device.getInfo();
+                    window.lwsEvent.send('profiles_broadcast_discovery_response', JSON.stringify(deviceInfo));
+                }
+
+                if (event.detail.name === 'profiles_broadcast_open_full') {
+                    var openRequest = JSON.parse(event.detail.data);
+                    if (openRequest.connectionId === lwsEvent.connectionId) {
+                        Lampa.Activity.push(openRequest.data);
+                    }
+                }
+            });
+
+            Lampa.Listener.follow('activity', function (event) {
+                if (ws.connected && event.type === 'start' && event.component === 'full') {
+                    $broadcastBtn.show();
+                } else {
+                    $broadcastBtn.hide();
+                }
+            });
+        }
+
+        function addBroadcastButton() {
+            $('.open--broadcast').remove();
+            $broadcastBtn.on('hover:enter hover:click hover:touch', function () {
+                var enabled = Lampa.Controller.enabled().name;
+
+                var template = Lampa.Template.get('broadcast', {
+                    text: Lampa.Lang.translate('broadcast_open')
+                });
+
+                var $list = template.find('.broadcast__devices');
+                $list.empty();
+                var emptyList = true;
+
+                template.find('.about').remove();
+
+                document.addEventListener('lwsEvent', handleDiscoveryResponse);
+                window.lwsEvent.send('profiles_broadcast_discovery', state.syncProfileId);
+
+                setTimeout(function () {
+                    document.removeEventListener('lwsEvent', handleDiscoveryResponse);
+                }, 4000);
+
+                Lampa.Modal.open({
+                    title: '',
+                    html: template,
+                    size: 'small',
+                    mask: true,
+                    onBack: function onBack() {
+                        document.removeEventListener('lwsEvent', handleDiscoveryResponse);
+                        Lampa.Modal.close();
+                        Lampa.Controller.toggle(enabled);
+                    }
+                });
+
+                function handleDiscoveryResponse(event) {
+                    if (event.detail.name === 'profiles_broadcast_discovery_response') {
+                        var device = JSON.parse(event.detail.data);
+                        var item = $('<div class="broadcast__device selector">' + device.name + '</div>');
+
+                        item.on('hover:enter', function () {
+                            document.removeEventListener('lwsEvent', handleDiscoveryResponse);
+                            Lampa.Modal.close();
+                            Lampa.Controller.toggle(enabled);
+
+                            var openRequest = {
+                                data: Lampa.Activity.extractObject(Lampa.Activity.active()),
+                                connectionId: device.wsConnectionId
+                            };
+
+                            window.lwsEvent.send('profiles_broadcast_open_full', JSON.stringify(openRequest));
+                        });
+                        $list.append(item);
+
+                        if (emptyList) {
+                            Lampa.Modal.toggle(item[0]);
+                            emptyList = true;
+                        }
+                    }
+                }
+            });
+
+            $('.head__action.open--search').after($broadcastBtn);
+
+            if (!ws.connected || Lampa.Activity.active().component !== 'full') {
+                $broadcastBtn.hide();
+            }
+
+            Lampa.Listener.follow('lws_connect', function (event) {
+                if (event.connected && Lampa.Activity.active().component === 'full') {
+                    $broadcastBtn.show();
+                }
+            });
+        }
     }
 
     function StateService() {
@@ -257,11 +412,7 @@
         this.render = function () {
             var currentProfile = state.getCurrentProfile();
 
-            var profileButton = $(
-                '<div class="head__action selector open--profile">' +
-                '<img id="user_profile_icon" src="' + currentProfile.icon + '"/>' +
-                '</div>');
-
+            var profileButton = $('<div class="head__action selector open--profile"><img id="user_profile_icon" src="' + currentProfile.icon + '"/></div>');
             $('.open--profile').before(profileButton).remove();
 
             profileButton.on('hover:enter hover:click hover:touch', function () {
@@ -576,6 +727,11 @@
                     if (profiles.length == 0) {
                         logger.error('Profiles are not defined');
                         return;
+                    }
+
+                    if (state.online && state.broadcastEnabled) {
+                        var broadcastSvc = new BroadcastService(ws, state);
+                        broadcastSvc.init();
                     }
 
                     var currentProfile = Utils.Array.find(state.profiles, function (profile) {
