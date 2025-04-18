@@ -2,7 +2,7 @@
     'use strict';
 
     var pluginManifest = {
-        version: '2.2.0',
+        version: '2.3.0',
         author: 'levende',
         docs: 'https://levende.github.io/lampa-plugins/docs/profiles',
         contact: 'https://t.me/levende',
@@ -235,6 +235,38 @@
                         Lampa.Activity.push(openRequest.data);
                     }
                 }
+
+                if (event.detail.name === 'profiles_broadcast_open_player') {
+                    var openRequest = JSON.parse(event.detail.data);
+
+                    if (openRequest.connectionId === lwsEvent.connectionId) {
+                        Lampa.Controller.toContent();
+                        Lampa.Modal.open({
+                            title: '',
+                            align: 'center',
+                            html: $('<div class="about">' + Lampa.Lang.translate('confirm_open_player') + '</div>'),
+                            buttons: [{
+                                name: Lampa.Lang.translate('settings_param_no'),
+                                onSelect: function onSelect() {
+                                    Lampa.Modal.close();
+                                    Lampa.Controller.toggle('content');
+                                }
+                            }, {
+                                name: Lampa.Lang.translate('settings_param_yes'),
+                                onSelect: function onSelect() {
+                                    Lampa.Modal.close();
+                                    Lampa.Controller.toggle('content');
+                                    Lampa.Player.play(openRequest.data.player);
+                                    Lampa.Player.playlist(openRequest.data.playlist);
+                                }
+                            }],
+                            onBack: function onBack() {
+                                Lampa.Modal.close();
+                                Lampa.Controller.toggle('content');
+                            }
+                        });
+                    }
+                }
             });
 
             Lampa.Listener.follow('activity', function (event) {
@@ -244,67 +276,89 @@
                     $broadcastBtn.hide();
                 }
             });
+
+            Lampa.PlayerPanel.listener.follow('share', function (e) {
+                broadcast(Lampa.Lang.translate('broadcast_play'), function (device) {
+                    var openRequest = {
+                        data: {
+                            player: Lampa.Player.playdata(),
+                            playlist: Lampa.PlayerPlaylist.get()
+                        },
+                        connectionId: device.wsConnectionId
+                    };
+
+                    window.lwsEvent.send('profiles_broadcast_open_player', JSON.stringify(openRequest));
+                });
+            });
+        }
+
+        function broadcast(text, callback) {
+            var enabled = Lampa.Controller.enabled().name;
+
+            var template = Lampa.Template.get('broadcast', {
+                text: text
+            });
+
+            var $list = template.find('.broadcast__devices');
+            $list.empty();
+            var emptyList = true;
+
+            template.find('.about').remove();
+
+            document.addEventListener('lwsEvent', handleDiscoveryResponse);
+            window.lwsEvent.send('profiles_broadcast_discovery', state.syncProfileId);
+
+            setTimeout(function () {
+                document.removeEventListener('lwsEvent', handleDiscoveryResponse);
+            }, 4000);
+
+            Lampa.Modal.open({
+                title: '',
+                html: template,
+                size: 'small',
+                mask: true,
+                onBack: function onBack() {
+                    document.removeEventListener('lwsEvent', handleDiscoveryResponse);
+                    Lampa.Modal.close();
+                    Lampa.Controller.toggle(enabled);
+                }
+            });
+
+            function handleDiscoveryResponse(event) {
+                if (event.detail.name === 'profiles_broadcast_discovery_response') {
+                    var device = JSON.parse(event.detail.data);
+                    var item = $('<div class="broadcast__device selector">' + device.name + '</div>');
+
+                    item.on('hover:enter', function () {
+                        document.removeEventListener('lwsEvent', handleDiscoveryResponse);
+                        Lampa.Modal.close();
+                        Lampa.Controller.toggle(enabled);
+
+                        callback(device);
+                    });
+                    $list.append(item);
+
+                    if (emptyList) {
+                        Lampa.Modal.toggle(item[0]);
+                        emptyList = true;
+                    }
+                }
+            }
         }
 
         function addBroadcastButton() {
             $('.open--broadcast').remove();
+            Lampa.Broadcast.open = function () { };
+
             $broadcastBtn.on('hover:enter hover:click hover:touch', function () {
-                var enabled = Lampa.Controller.enabled().name;
+                broadcast(Lampa.Lang.translate('broadcast_open'), function (device) {
+                    var openRequest = {
+                        data: Lampa.Activity.extractObject(Lampa.Activity.active()),
+                        connectionId: device.wsConnectionId
+                    };
 
-                var template = Lampa.Template.get('broadcast', {
-                    text: Lampa.Lang.translate('broadcast_open')
+                    window.lwsEvent.send('profiles_broadcast_open_full', JSON.stringify(openRequest));
                 });
-
-                var $list = template.find('.broadcast__devices');
-                $list.empty();
-                var emptyList = true;
-
-                template.find('.about').remove();
-
-                document.addEventListener('lwsEvent', handleDiscoveryResponse);
-                window.lwsEvent.send('profiles_broadcast_discovery', state.syncProfileId);
-
-                setTimeout(function () {
-                    document.removeEventListener('lwsEvent', handleDiscoveryResponse);
-                }, 4000);
-
-                Lampa.Modal.open({
-                    title: '',
-                    html: template,
-                    size: 'small',
-                    mask: true,
-                    onBack: function onBack() {
-                        document.removeEventListener('lwsEvent', handleDiscoveryResponse);
-                        Lampa.Modal.close();
-                        Lampa.Controller.toggle(enabled);
-                    }
-                });
-
-                function handleDiscoveryResponse(event) {
-                    if (event.detail.name === 'profiles_broadcast_discovery_response') {
-                        var device = JSON.parse(event.detail.data);
-                        var item = $('<div class="broadcast__device selector">' + device.name + '</div>');
-
-                        item.on('hover:enter', function () {
-                            document.removeEventListener('lwsEvent', handleDiscoveryResponse);
-                            Lampa.Modal.close();
-                            Lampa.Controller.toggle(enabled);
-
-                            var openRequest = {
-                                data: Lampa.Activity.extractObject(Lampa.Activity.active()),
-                                connectionId: device.wsConnectionId
-                            };
-
-                            window.lwsEvent.send('profiles_broadcast_open_full', JSON.stringify(openRequest));
-                        });
-                        $list.append(item);
-
-                        if (emptyList) {
-                            Lampa.Modal.toggle(item[0]);
-                            emptyList = true;
-                        }
-                    }
-                }
             });
 
             $('.head__action.open--search').after($broadcastBtn);
