@@ -290,8 +290,8 @@
             });
 
             window.lampac_online_context_menu = {
-                push: function(menu, extra) {
-                  if (extra) {
+                push: function(menu, extra, params) {
+                  if (extra && params && params.element) {
                     menu.push({
                         title: Lampa.Lang.translate('player_share_descr'),
                         broadcast_play: true
