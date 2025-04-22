@@ -2,7 +2,7 @@
     'use strict';
 
     var pluginManifest = {
-        version: '2.3.1',
+        version: '2.4.0',
         author: 'levende',
         docs: 'https://levende.github.io/lampa-plugins/docs/profiles',
         contact: 'https://t.me/levende',
@@ -280,16 +280,50 @@
 
             Lampa.PlayerPanel.listener.follow('share', function (e) {
                 broadcast(Lampa.Lang.translate('broadcast_play'), function (device) {
-                    var openRequest = {
-                        data: {
+                    broadcastPlayer(function() {
+                        return {
                             player: Lampa.Player.playdata(),
                             playlist: Lampa.PlayerPlaylist.get()
-                        },
-                        connectionId: device.wsConnectionId
-                    };
-
-                    window.lwsEvent.send('profiles_broadcast_open_player', JSON.stringify(openRequest));
+                        };
+                    });
                 });
+            });
+
+            window.lampac_online_context_menu = {
+                push: function(menu, extra) {
+                  if (extra) {
+                    menu.push({
+                        title: Lampa.Lang.translate('player_share_descr'),
+                        broadcast_play: true
+                    });
+                  }
+                },
+                onSelect: function onSelect(a, params) {
+                  if (a.broadcast_play) {
+                    broadcastPlayer(function() {
+                        return {
+                            player: {
+                                quality: params.element.qualitys,
+                                title: params.element.title,
+                                url: params.element.url,
+                                timeline: params.element.timeline
+                            },
+                            playlist: []
+                        };
+                    });
+                  }
+                }
+              };
+        }
+
+        function broadcastPlayer(getPlayerDataFunc) {
+            broadcast(Lampa.Lang.translate('broadcast_play'), function (device) {
+                var openRequest = {
+                    data: getPlayerDataFunc(),
+                    connectionId: device.wsConnectionId
+                };
+
+                window.lwsEvent.send('profiles_broadcast_open_player', JSON.stringify(openRequest));
             });
         }
 
@@ -312,11 +346,11 @@
             var interval = 500;
             var duration = 3000;
 
-            var timer = setInterval(function () {
+            var timer = setInterval(function() {
                 window.lwsEvent.send('profiles_broadcast_discovery', state.syncProfileId);
             }, interval);
 
-            setTimeout(function () {
+            setTimeout(function() {
                 clearInterval(timer);
                 document.removeEventListener('lwsEvent', handleDiscoveryResponse);
             }, duration);
