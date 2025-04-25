@@ -43,6 +43,7 @@
 
             $('.selectbox-item').first().after($selectBoxItem);
             Lampa.Controller.collectionSet($('body > .selectbox').find('.scroll__body'));
+            Lampa.Controller.collectionFocus($('.selectbox-item').first());
         });
     }
 
