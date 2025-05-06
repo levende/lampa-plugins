@@ -2,7 +2,7 @@
     'use strict';
 
     var pluginManifest = {
-        version: '2.4.0',
+        version: '2.5.0',
         author: 'levende',
         docs: 'https://levende.github.io/lampa-plugins/docs/profiles',
         contact: 'https://t.me/levende',
@@ -222,6 +222,7 @@
         var $broadcastBtn = $('<div class="head__action head__settings selector open--broadcast-lampac"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1.04272 7.22978V6.76392C1.04272 4.00249 3.2813 1.76392 6.04272 1.76392H17.7877C20.5491 1.76392 22.7877 4.00249 22.7877 6.76392V17.2999C22.7877 20.0613 20.5491 22.2999 17.7877 22.2999H15.8387" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></path><circle cx="6.69829" cy="16.6443" r="5.65556" fill="currentColor"></circle></svg></div>');
 
         self.init = function () {
+            extendContextMenu();
             addBroadcastButton();
 
             document.addEventListener('lwsEvent', function (event) {
@@ -233,7 +234,13 @@
                 if (event.detail.name === 'profiles_broadcast_open_full') {
                     var openRequest = JSON.parse(event.detail.data);
                     if (openRequest.connectionId === lwsEvent.connectionId) {
-                        Lampa.Activity.push(openRequest.data);
+                        Lampa.Activity.push({
+                            card: openRequest.data,
+                            component: 'full',
+                            method: openRequest.data.method,
+                            source: openRequest.data.source,
+                            id: openRequest.data.id
+                        });
                     }
                 }
 
@@ -411,6 +418,40 @@
                     deviceList.push(device.wsConnectionId);
                 }
             }
+        }
+
+        function extendContextMenu() {
+            var manifest = {
+                type: 'video',
+                version: '1.0.0',
+                name: Lampa.Lang.translate('broadcast_open'),
+                description: '',
+                onContextMenu: function(object) {
+                    if (ws.connected) return;
+                    return {
+                        name: Lampa.Lang.translate('broadcast_open'),
+                        description: ''
+                    }
+                },
+                onContextLauch: function(data) {
+                    broadcast(Lampa.Lang.translate('broadcast_open'), function (device) {
+                        if (!data.method) {
+                            data.method = data.number_of_seasons || data.seasons || data.last_episode_to_air || data.first_episode_to_air || data.first_air_date ? 'tv' : 'movie';
+                        }
+
+                        data.source = data.source || Lampa.Storage.get('source', 'cub');
+
+                        var openRequest = {
+                            data: data,
+                            connectionId: device.wsConnectionId
+                        };
+    
+                        window.lwsEvent.send('profiles_broadcast_open_full', JSON.stringify(openRequest));
+                    });
+                }
+            }
+        
+            Lampa.Manifest.plugins = manifest
         }
 
         function addBroadcastButton() {
