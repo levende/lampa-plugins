@@ -20,7 +20,7 @@
             name: 'CUB',
             collectionsListUrl: Lampa.Utils.protocol() + Lampa.Manifest.cub_domain + '/api/collections/list/',
             fullCollectionBaseUrl: Lampa.Utils.protocol() + Lampa.Manifest.cub_domain + '/api/collections/view/',
-            img: 'https://image.tmdb.org/t/p/w500//7FZEiwSNKoV6f7eSiRzfhdTYyxC.jpg',
+            img: Lampa.Api.img('7FZEiwSNKoV6f7eSiRzfhdTYyxC.jpg', 'w300'),
             mapper: function(data) {
                 data.results.forEach(function(element) {
                     element.poster_path = element.img;
