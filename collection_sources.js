@@ -183,6 +183,8 @@
         if (window.collection_sources_plugin) return;
         window.collection_sources_plugin = true;
 
+        window.Lampa.CollectionSources = collectionsSources;
+
         var manifest = {
             type: 'video',
             version: '1.0.0',
@@ -203,7 +205,8 @@
         Lampa.Component.add('collection_content', CollectionComponent);
 
         addCategoryButton();
-        window.Lampa.CollectionSources = collectionsSources;
+
+        Lampa.Listener.send('collection_sources', 'ready');
     }
 
     if (window.appready) {
