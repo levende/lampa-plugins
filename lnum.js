@@ -34,6 +34,7 @@
         collection: 'collection'
     };
 
+
     function LNumApiService() {
         var self = this;
         self.network = new Lampa.Reguest();
@@ -216,18 +217,49 @@
                 }
             ];
 
-            if (COLLECTIONS.length > 0) {
-                var collectionLines = [];
-                COLLECTIONS.forEach(function (collectionSrc) {
-                    collectionSrc.list.forEach(function (collectionName, index) {
-                        collectionLines.push(function (callback) {
-                            makeRequest(LINE_TYPES.collection, '/' + collectionSrc.name + '/' + index, collectionName, callback, true);
+            function loadCollectionsAndProceed() {
+                if (COLLECTIONS.length > 0) {
+                    var collectionLines = [];
+                    COLLECTIONS.forEach(function (collectionSrc) {
+                        collectionSrc.list.forEach(function (collectionName, index) {
+                            collectionLines.push(function (callback) {
+                                makeRequest(LINE_TYPES.collection, '/' + collectionSrc.name + '/' + index, collectionName, callback, true);
+                            });
                         });
                     });
-                });
+                }
+
+                partsData = partsData.concat(getCollectionLines());
+
+                function loadPart(partLoaded, partEmpty) {
+                    Lampa.Api.partNext(partsData, partsLimit, function (result) {
+                        partLoaded(result);
+                    }, function (error) {
+                        partEmpty(error);
+                    });
+                }
+
+                loadPart(onSuccess, onError);
+                return loadPart;
             }
 
-            partsData = partsData.concat(getCollectionLines());
+            if (COLLECTIONS.length === 0) {
+                self.network.silent(LNUM_COLLECTIONS_BASE_URL + '?session_id=' + SESSION_ID + '&lnum_token=' + LNUM_TOKEN, function (json) {
+                    if (json.success) {
+                        COLLECTIONS = json.results;
+                        console.log('Loaded collections in category:', COLLECTIONS); // Логирование загруженных коллекций
+                        return loadCollectionsAndProceed();
+                    } else {
+                        console.error('Failed to load collections:', json);
+                        onError(new Error('Failed to load collections'));
+                    }
+                }, function (error) {
+                    console.error('Request error for collections:', error);
+                    onError(error);
+                });
+            } else {
+                return loadCollectionsAndProceed();
+            }
 
             function getCollectionLines() {
                 var collectionLinesRaw = [];
@@ -239,7 +271,7 @@
                 COLLECTIONS.forEach(function (collectionSrc) {
                     for (var i = 0; i < collectionSrc.list.length; i++) {
                         collectionLinesRaw.push({
-                            path: '/' + collectionSrc.name + '/' + i,
+                            path: '/' + collectionSrc.name + '/' + (i + 1), // Индексация начинается с 1
                             name: collectionSrc.list[i]
                         });
                     }
@@ -309,17 +341,6 @@
                     callback({ error: error });
                 });
             }
-
-            function loadPart(partLoaded, partEmpty) {
-                Lampa.Api.partNext(partsData, partsLimit, function (result) {
-                    partLoaded(result);
-                }, function (error) {
-                    partEmpty(error);
-                });
-            }
-
-            loadPart(onSuccess, onError);
-            return loadPart;
         };
 
         function getBaseUrl(lineType) {
