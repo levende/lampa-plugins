@@ -5,6 +5,8 @@
     if (!Array.prototype.forEach) { Array.prototype.forEach = function forEachArray(c, t) { if (this == null) { throw new TypeError('Array is null or undefined'); } var s = Object(this), l = s.length >>> 0; if (typeof c !== 'function') { throw new TypeError(c + ' is not a function'); } for (var i = 0; i < l; i++) { if (i in s) { c.call(t, s[i], i, s); } } }; }
     if (!Array.prototype.indexOf) { Array.prototype.indexOf = function indexOfElement(e, f) { if (this == null) { throw new TypeError('"this" is null or not defined'); } var s = Object(this), l = s.length >>> 0; if (l === 0) return -1; var i = Number(f) || 0; if (i >= l) return -1; var k = Math.max(i >= 0 ? i : l - Math.abs(i), 0); while (k < l) { if (k in s && s[k] === e) return k; k++; } return -1; }; }
 
+    var SESSION_ID = '';
+
     var SOURCE_NAME = 'LNUM';
     var CACHE_SIZE = 100;
     var CACHE_TIME = 1000 * 60 * 60 * 3; //3h
@@ -12,7 +14,7 @@
 
     var LNUM_BASE_URL = 'https://lnum.levende-develop.workers.dev';
     var LNUM_TOKEN = 'LWqtqs1k1YVVIHSP';
-    var LNUM_COLLECTIONS_BASE_URL = '';
+    var LNUM_COLLECTIONS_BASE_URL = 'https://lnum-collections.levende-develop.workers.dev/list';
     var LNUM_COLLECTIONS_TOKEN = LNUM_TOKEN;
 
     var COLLECTIONS = [];
@@ -87,7 +89,7 @@
         function normalizeData(json) {
             return {
                 results: (json.results || []).map(function (item) {
-                    return {
+                    var dataItem = {
                         id: item.id,
                         name: item.name || item.title,
                         original_name: item.original_name || item.original_title || item.name || 'Unknown',
@@ -105,6 +107,11 @@
                         source: SOURCE_NAME,
                         release_quality: item.release_quality || '',
                     }
+
+                    dataItem.promo_title = dataItem.name;
+                    dataItem.promo = dataItem.overview;
+
+                    return dataItem;
                 }),
                 page: json.page || 1,
                 total_pages: json.total_pages || json.pagesCount || 1,
@@ -146,7 +153,7 @@
             var id = targetParam[1];
 
             var page = params.page || 1;
-            var url = baseUrl + '/' + id + '?page=' + page + '&language=' + Lampa.Storage.get('tmdb_lang', 'ru') + '&api_key=' + Lampa.TMDB.key() + '&lnum_token=' + token;
+            var url = baseUrl + '/' + id + '?page=' + page + '&language=' + Lampa.Storage.get('tmdb_lang', 'ru') + '&api_key=' + Lampa.TMDB.key() + '&lnum_token=' + token + '&session_id=' + SESSION_ID;
 
             getFromCache(url, params, function (json) {
                 if (!json.results) {
@@ -209,12 +216,80 @@
                 }
             ];
 
-            function makeRequest(lineType, lineId, title, callback) {
+            if (COLLECTIONS.length > 0) {
+                var collectionLines = [];
+                COLLECTIONS.forEach(function (collectionSrc) {
+                    collectionSrc.list.forEach(function (collectionName, index) {
+                        collectionLines.push(function (callback) {
+                            makeRequest(LINE_TYPES.collection, '/' + collectionSrc.name + '/' + index, collectionName, callback, true);
+                        });
+                    });
+                });
+            }
+
+            partsData = partsData.concat(getCollectionLines());
+
+            function getCollectionLines() {
+                var collectionLinesRaw = [];
+
+                if (COLLECTIONS.length === 0) {
+                    return [];
+                }
+
+                COLLECTIONS.forEach(function (collectionSrc) {
+                    for (var i = 0; i < collectionSrc.list.length; i++) {
+                        collectionLinesRaw.push({
+                            path: '/' + collectionSrc.name + '/' + i,
+                            name: collectionSrc.list[i]
+                        });
+                    }
+                });
+
+                function shuffle(array) {
+                    var i = array.length, j, temp;
+                    while (--i > 0) {
+                        j = Math.floor(Math.random() * (i + 1));
+                        temp = array[i];
+                        array[i] = array[j];
+                        array[j] = temp;
+                    }
+                }
+                shuffle(collectionLinesRaw);
+
+                var finalLines = [];
+                var previousHadTrue = false;
+
+                for (var i = 0; i < collectionLinesRaw.length; i++) {
+                    var item = collectionLinesRaw[i];
+                    var useTrue = false;
+
+                    if (!previousHadTrue && Math.random() < 0.28) {
+                        useTrue = true;
+                        previousHadTrue = true;
+                    } else {
+                        previousHadTrue = false;
+                    }
+
+                    finalLines.push((function (path, name, useTrueFlag) {
+                        return function (callback) {
+                            makeRequest(LINE_TYPES.collection, path, name, callback, useTrueFlag);
+                        };
+                    })(item.path, item.name, useTrue));
+                }
+
+                return finalLines;
+            }
+
+            function makeRequest(lineType, lineId, title, callback, wide) {
+                if (wide === undefined) {
+                    wide = false;
+                }
+
                 var baseUrl = getBaseUrl(lineType);
                 var lang = Lampa.Storage.get('tmdb_lang', 'ru');
                 var token = getToken(lineType);
                 var page = params.page || 1;
-                var url = baseUrl + '/' + lineId + '?language=' + lang + '&page=' + page + '&api_key=' + Lampa.TMDB.key() + '&lnum_token=' + token;
+                var url = baseUrl + '/' + lineId + '?language=' + lang + '&page=' + page + '&api_key=' + Lampa.TMDB.key() + '&lnum_token=' + token + '&session_id=' + SESSION_ID;
 
                 getFromCache(url, params, function (json) {
                     var result = {
@@ -225,7 +300,9 @@
                         total_pages: json.total_pages || 1,
                         more: json.total_pages > page,
                         results: json.results || [],
-                        source: SOURCE_NAME
+                        source: SOURCE_NAME,
+                        small: wide,
+                        wide: wide
                     };
                     callback(result);
                 }, function (error) {
@@ -409,11 +486,20 @@
             }
         });
 
+        SESSION_ID = Lampa.Utils.uid();
+
         var lNumApi = new LNumApiService();
         Lampa.Api.sources.num = lNumApi;
         Object.defineProperty(Lampa.Api.sources, SOURCE_NAME, {
             get: function () {
                 return lNumApi;
+            }
+        });
+
+        var network = new Lampa.Reguest();
+        network.silent(LNUM_COLLECTIONS_BASE_URL + '?session_id=' + SESSION_ID + '&lnum_token=' + LNUM_TOKEN, function (json) {
+            if (json.success) {
+                COLLECTIONS = json.results;
             }
         });
 
