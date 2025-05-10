@@ -143,10 +143,6 @@
             });
         };
 
-        self.clear = function () {
-            self.network.clear();
-        }
-
         self.list = function (params, onComplete, onError) {
             params = params || {};
             onComplete = onComplete || function () { };
@@ -344,6 +340,18 @@
                 });
             }
         };
+
+        self.clear = function () {
+            self.network.clear();
+        }
+
+        self.person = function (params, onSuccess, onError) {
+            Lampa.Api.sources.tmdb.person(params, onSuccess, onError);
+        }
+
+        self.seasons = function (params, onSuccess, onError) {
+            Lampa.Api.sources.tmdb.seasons(params, onSuccess, onError);
+        }
 
         function getBaseUrl(lineType) {
             switch (lineType) {
