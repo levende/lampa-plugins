@@ -27,3 +27,7 @@ Welcome to the page! This page contains a collection of plugins designed to enha
 - **[anti-dmca.js](https://levende.github.io/lampa-plugins/anti-dmca.js)**
 
 *Note: Please ensure you follow the installation instructions carefully and review the plugin description for any important details before use.*
+
+## Buy me a coffee:
+- **USDT TRC20**: TMCTvpeKrCtxYgL71DQZc5T5gLMn16fbEX
+- **TON**: UQAR4E1PZmnMc1n_F7xhUXmdG3XacYrz_Ca4pZWbfVoFcyFz
