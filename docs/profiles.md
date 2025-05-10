@@ -131,7 +131,3 @@ You can install the plugin using the following link: [profiles.js](https://leven
 Other available plugins can be found using the following link: [All plugins](https://levende.github.io/lampa-plugins)
 
 ---
-
-## Buy me a coffee:
-- **USDT TRC20**: TMCTvpeKrCtxYgL71DQZc5T5gLMn16fbEX
-- **TON**: UQAR4E1PZmnMc1n_F7xhUXmdG3XacYrz_Ca4pZWbfVoFcyFz
