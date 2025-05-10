@@ -143,17 +143,22 @@
             });
         };
 
+        self.clear = function () {
+            self.network.clear();
+        }
+
         self.list = function (params, onComplete, onError) {
             params = params || {};
             onComplete = onComplete || function () { };
             onError = onError || function () { };
 
             var targetParam = (params.url || LINE_TYPES.base + '__' + BASE_CATEGORIES.releases).split('__');
-            var baseUrl = getBaseUrl(targetParam[0]);
-            var token = getToken(targetParam[0]);
+            var lineType = targetParam[0];
+            var baseUrl = getBaseUrl(lineType);
+            var token = getToken(lineType);
             var id = targetParam[1];
-
             var page = params.page || 1;
+
             var url = baseUrl + '/' + id + '?page=' + page + '&language=' + Lampa.Storage.get('tmdb_lang', 'ru') + '&api_key=' + Lampa.TMDB.key() + '&lnum_token=' + token + '&session_id=' + SESSION_ID;
 
             getFromCache(url, params, function (json) {
@@ -247,14 +252,11 @@
                 self.network.silent(LNUM_COLLECTIONS_BASE_URL + '?session_id=' + SESSION_ID + '&lnum_token=' + LNUM_TOKEN, function (json) {
                     if (json.success) {
                         COLLECTIONS = json.results;
-                        console.log('Loaded collections in category:', COLLECTIONS); // Логирование загруженных коллекций
                         return loadCollectionsAndProceed();
                     } else {
-                        console.error('Failed to load collections:', json);
                         onError(new Error('Failed to load collections'));
                     }
                 }, function (error) {
-                    console.error('Request error for collections:', error);
                     onError(error);
                 });
             } else {
@@ -271,7 +273,7 @@
                 COLLECTIONS.forEach(function (collectionSrc) {
                     for (var i = 0; i < collectionSrc.list.length; i++) {
                         collectionLinesRaw.push({
-                            path: '/' + collectionSrc.name + '/' + (i + 1), // Индексация начинается с 1
+                            path: '/' + collectionSrc.name + '/' + (i + 1),
                             name: collectionSrc.list[i]
                         });
                     }
