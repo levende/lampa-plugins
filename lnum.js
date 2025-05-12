@@ -506,8 +506,17 @@
 
                     event.object.card.on('hover:enter', function (e) {
                         var $header = $('<div><p>' + Lampa.Lang.translate('donate_text') + '</p></div>');
-                        var $wallets = $('<div style="overflow:hidden;margin:2em 2em;"><div style="display:inline-block;width:45%;vertical-align:top;margin:0 2%;"><div><span class="account-add-device__site">USDT TRC20</span></div><img style="margin-top: 1em;" src="https://quickchart.io/qr?text=TMCTvpeKrCtxYgL71DQZc5T5gLMn16fbEX&size=200" alt="USDT TRC20 QR Code"><p style="overflow-wrap: break-word; margin: 1em 0;">TMCTvpeKrCtxYgL71DQZc5T5gLMn16fbEX</p></div><div style="display:inline-block;width:45%;vertical-align:top;margin:0 2%;"><div><span class="account-add-device__site">Toncoin</span></div><img style="margin-top: 1em;" src="https://quickchart.io/qr?text=UQAR4E1PZmnMc1n_F7xhUXmdG3XacYrz_Ca4pZWbfVoFcyFz&size=200" alt="TON QR Code"><p style="overflow-wrap: break-word; margin: 1em 0;">UQAR4E1PZmnMc1n_F7xhUXmdG3XacYrz_Ca4pZWbfVoFcyFz</p></div></div>');
+                        var $wallets = $('<div style="overflow:hidden;margin:2em 2em;"><div class="wallet selector" style="display:inline-block;width:45%;vertical-align:top;margin:0 2%;"><div><span class="account-add-device__site">USDT TRC20</span></div><img style="margin-top: 1em;" src="https://quickchart.io/qr?text=TMCTvpeKrCtxYgL71DQZc5T5gLMn16fbEX&size=200" alt="USDT TRC20 QR Code"><p style="overflow-wrap: break-word; margin: 1em 0;">TMCTvpeKrCtxYgL71DQZc5T5gLMn16fbEX</p></div><div class="wallet selector" style="display:inline-block;width:45%;vertical-align:top;margin:0 2%;"><div><span class="account-add-device__site">Toncoin</span></div><img style="margin-top: 1em;" src="https://quickchart.io/qr?text=UQAR4E1PZmnMc1n_F7xhUXmdG3XacYrz_Ca4pZWbfVoFcyFz&size=200" alt="TON QR Code"><p style="overflow-wrap: break-word; margin: 1em 0;">UQAR4E1PZmnMc1n_F7xhUXmdG3XacYrz_Ca4pZWbfVoFcyFz</p></div></div>');
                         var $footer = $('<div><p>' + Lampa.Lang.translate('donate_footer') + ' <span class="account-add-device__site" style="color: #fff; background-color: #0088cc;">@levende</span></p></div>');
+
+                        $('.wallet', $wallets).on('hover:enter', function() {
+                            $walletAddress = $('p', $(this)).text();
+                            Lampa.Utils.copyTextToClipboard($walletAddress, function() {
+                                Lampa.Noty.show(Lampa.Lang.translate('copy_secuses'))
+                            }, function() {
+                                Lampa.Noty.show(Lampa.Lang.translate('copy_error'));
+                            });
+                        });
 
                         var $html = $('<div></div>');
 
