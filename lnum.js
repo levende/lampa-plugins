@@ -583,6 +583,11 @@
 
         SESSION_ID = Lampa.Utils.uid();
 
+        var overrideSettings = window.lnum_settings || {};
+
+        LNUM_TOKEN = overrideSettings.token || LNUM_COLLECTIONS_TOKEN;
+        LNUM_COLLECTIONS_TOKEN = overrideSettings.token || LNUM_COLLECTIONS_TOKEN;
+
         var lNumApi = new LNumApiService();
         Lampa.Api.sources.num = lNumApi;
         Object.defineProperty(Lampa.Api.sources, SOURCE_NAME, {
