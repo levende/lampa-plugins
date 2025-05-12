@@ -93,21 +93,16 @@
                     var dataItem = {
                         id: item.id,
                         name: item.name || item.title,
-                        original_name: item.original_name || item.original_title || item.name || 'Unknown',
-                        number_of_seasons: item.number_of_seasons,
-                        seasons: item.seasons,
                         last_episode_to_air: item.last_episode_to_air,
                         first_air_date: item.first_air_date,
-                        release_date: item.release_date,
                         poster_path: item.poster_path || item.poster || item.img || '',
                         overview: item.overview || item.description || '',
                         vote_average: item.vote_average || 0,
-                        vote_count: item.vote_count || 0,
                         backdrop_path: item.backdrop_path || item.backdrop || '',
-                        still_path: item.still_path || '',
+                        background_image: item.background_image,
                         source: SOURCE_NAME,
                         release_quality: item.release_quality || '',
-                    }
+                    };
 
                     dataItem.promo_title = dataItem.name;
                     dataItem.promo = dataItem.overview;
@@ -497,6 +492,46 @@
         }
         window.lnum_plugin = true;
 
+        Lampa.Utils.putScriptAsync(['https://levende.github.io/lampa-plugins/listener-extensions.js'], function () {
+            Lampa.Listener.follow('card', function (event) {
+                if (event.type === 'build' && event.object.data.id === 'lnum_promo') {
+                    debugger;
+                    if ($(event.object.card).hasClass('card--wide')) {
+                        event.object.data.img = event.object.data.background_image;
+                        $('.card__promo', event.object.card).remove();
+                    }
+
+                    var $donateBar = $('<div style="z-index: 50; position: absolute;left: -0.8em;top: 1.4em;padding: 0.4em 0.4em;background: #800020;color: #fff;font-size: 0.8em;-webkit-border-radius: 0.3em;-moz-border-radius: 0.3em;border-radius: 0.3em;" class="card__type">' + Lampa.Lang.translate('donate') + '</div>');
+                    $('.card__icons', event.object.card).after($donateBar);
+
+                    event.object.card.on('hover:enter', function (e) {
+                        var $header = $('<div><p>' + Lampa.Lang.translate('donate_text') + '</p></div>');
+                        var $wallets = $('<div style="overflow:hidden;margin:2em 2em;"><div style="display:inline-block;width:45%;vertical-align:top;margin:0 2%;"><div><span class="account-add-device__site">USDT TRC20</span></div><img style="margin-top: 1em;" src="https://quickchart.io/qr?text=TMCTvpeKrCtxYgL71DQZc5T5gLMn16fbEX&size=200" alt="USDT TRC20 QR Code"><p style="overflow-wrap: break-word; margin: 1em 0;">TMCTvpeKrCtxYgL71DQZc5T5gLMn16fbEX</p></div><div style="display:inline-block;width:45%;vertical-align:top;margin:0 2%;"><div><span class="account-add-device__site">Toncoin</span></div><img style="margin-top: 1em;" src="https://quickchart.io/qr?text=UQAR4E1PZmnMc1n_F7xhUXmdG3XacYrz_Ca4pZWbfVoFcyFz&size=200" alt="TON QR Code"><p style="overflow-wrap: break-word; margin: 1em 0;">UQAR4E1PZmnMc1n_F7xhUXmdG3XacYrz_Ca4pZWbfVoFcyFz</p></div></div>');
+                        var $footer = $('<div><p>' + Lampa.Lang.translate('donate_footer') + ' <span class="account-add-device__site" style="color: #fff; background-color: #0088cc;">@levende</span></p></div>');
+
+                        var $html = $('<div></div>');
+
+                        $html.append($header);
+                        $html.append($wallets);
+                        $html.append($footer);
+
+                        Lampa.Modal.open({
+                            title: Lampa.Lang.translate('donate_title'),
+                            html: $html,
+                            size: 'medium',
+                            align: 'center',
+                            onBack: function () {
+                                Lampa.Modal.close();
+                                Lampa.Controller.toggle('content');
+                            }
+                        });
+
+                        e.stopImmediatePropagation();
+                    })
+                }
+            });
+        });
+
         if (Lampa.Storage.field('start_page') === SOURCE_NAME) {
             window.start_deep_link = {
                 component: 'category',
@@ -514,6 +549,26 @@
             title_in_high_quality: {
                 en: 'In high quality',
                 uk: 'У високій якості'
+            },
+            donate: {
+                en: 'Donate',
+                uk: 'Підтримати',
+                ru: 'Поддержать'
+            },
+            donate_title: {
+                en: 'Thank you for using the LNUM plugin',
+                uk: 'Дякую, що користуєшься плагіном LNUM',
+                ru: 'Спасибо, что пользуетесь плагином LNUM'
+            },
+            donate_text: {
+                en: "If you enjoy the plugin, buy me a coffee — it'll fuel the plugin's growth and new projects!",
+                uk: 'Якщо Вам подобається плагін, пригостіть мене кавою — це дасть енергії для розвитку та нових проектів!',
+                ru: 'Если Вам нравится работа плагина, угостите меня кофе — это даст заряд для развития плагина и новых проектов!'
+            },
+            donate_footer: {
+                en: 'Want to say thanks another way? Message me on Telegram:',
+                uk: 'Хочете подякувати інакше? Пишіть у Telegram:',
+                ru: 'Хотите отблагодарить иначе? Напишите в Telegram:'
             }
         });
 
