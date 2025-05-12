@@ -95,7 +95,8 @@
                         name: item.name || item.title,
                         last_episode_to_air: item.last_episode_to_air,
                         first_air_date: item.first_air_date,
-                        poster_path: item.poster_path || item.poster || item.img || '',
+                        poster_path: item.poster_path || item.poster || '',
+                        img: item.img,
                         overview: item.overview || item.description || '',
                         vote_average: item.vote_average || 0,
                         backdrop_path: item.backdrop_path || item.backdrop || '',
@@ -495,7 +496,6 @@
         Lampa.Utils.putScriptAsync(['https://levende.github.io/lampa-plugins/listener-extensions.js'], function () {
             Lampa.Listener.follow('card', function (event) {
                 if (event.type === 'build' && event.object.data.id === 'lnum_promo') {
-                    debugger;
                     if ($(event.object.card).hasClass('card--wide')) {
                         event.object.data.img = event.object.data.background_image;
                         $('.card__promo', event.object.card).remove();
