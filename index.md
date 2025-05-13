@@ -4,26 +4,29 @@ Welcome to the page! This page contains a collection of plugins designed to enha
 
 ## Available Plugins
 
-### 1. **Bookmarks Sync Plugin**
+### 1. **LNUM**
+- **[https://levende.github.io/lampa-plugins/lnum.js](https://levende.github.io/lampa-plugins/lnum.js)**
+
+### 2. **Bookmarks Sync Plugin**
 - **[https://levende.github.io/lampa-plugins/bookmarks-sync.js](https://levende.github.io/lampa-plugins/bookmarks-sync.js)**
 - **[Description](https://levende.github.io/lampa-plugins/docs/bookmarks-sync)**
 
-### 2. **Profiles Plugin**
+### 3. **Profiles Plugin**
 - **[https://levende.github.io/lampa-plugins/profiles.js](https://levende.github.io/lampa-plugins/profiles.js)**
 - **[Description](https://levende.github.io/lampa-plugins/docs/profiles)**
 
-### 3. **TMDB Networks**
+### 4. **TMDB Networks**
 - **[https://levende.github.io/lampa-plugins/tmdb-networks.js](https://levende.github.io/lampa-plugins/tmdb-networks.js)**
 - **[Description](https://levende.github.io/lampa-plugins/docs/tmdb-networks)**
 
-### 4. **Custom Favorites**
+### 5. **Custom Favorites**
 - **[https://levende.github.io/lampa-plugins/custom-favs.js](https://levende.github.io/lampa-plugins/custom-favs.js)**
 - **[Description](https://levende.github.io/lampa-plugins/docs/custom-favs)**
 
-### 5. **Lampac Source Filter**
+### 6. **Lampac Source Filter**
 - **[lampac-src-filter.js](https://levende.github.io/lampa-plugins/lampac-src-filter.js)**
 
-### 6. **Anti DMCA**
+### 7. **Anti DMCA**
 - **[anti-dmca.js](https://levende.github.io/lampa-plugins/anti-dmca.js)**
 
 *Note: Please ensure you follow the installation instructions carefully and review the plugin description for any important details before use.*
