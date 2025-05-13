@@ -41,9 +41,18 @@
                 $sourceBtn.trigger('hover:enter');
             });
 
-            $('.selectbox-item').first().after($selectBoxItem);
-            Lampa.Controller.collectionSet($('body > .selectbox').find('.scroll__body'));
-            Lampa.Controller.collectionFocus($('.selectbox-item').first());
+            var $itemsBody = $('body > .selectbox').find('.scroll__body');
+            var $selectOptions = $itemsBody.find('.selectbox-item');
+
+            if ($selectOptions.length > 0) {
+                $selectOptions.first().after($selectBoxItem);
+            } else {
+                $('.selectbox__body .scroll__body').prepend($selectBoxItem)
+
+            }
+
+            Lampa.Controller.collectionSet($itemsBody);
+            Lampa.Controller.collectionFocus($itemsBody.find('.selectbox-item').first());
         });
     }
 
