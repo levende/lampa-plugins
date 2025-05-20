@@ -5,6 +5,10 @@
     if (!Array.prototype.forEach) { Array.prototype.forEach = function forEachArray(c, t) { if (this == null) { throw new TypeError('Array is null or undefined'); } var s = Object(this), l = s.length >>> 0; if (typeof c !== 'function') { throw new TypeError(c + ' is not a function'); } for (var i = 0; i < l; i++) { if (i in s) { c.call(t, s[i], i, s); } } }; }
     if (!Array.prototype.indexOf) { Array.prototype.indexOf = function indexOfElement(e, f) { if (this == null) { throw new TypeError('"this" is null or not defined'); } var s = Object(this), l = s.length >>> 0; if (l === 0) return -1; var i = Number(f) || 0; if (i >= l) return -1; var k = Math.max(i >= 0 ? i : l - Math.abs(i), 0); while (k < l) { if (k in s && s[k] === e) return k; k++; } return -1; }; }
 
+    addTranslates();
+
+    var ICON = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 512 512" style="enable-background:new 0 0 512 512;" xml:space="preserve"><g><g><path fill="currentColor" d="M482.909,67.2H29.091C13.05,67.2,0,80.25,0,96.291v319.418C0,431.75,13.05,444.8,29.091,444.8h453.818c16.041,0,29.091-13.05,29.091-29.091V96.291C512,80.25,498.95,67.2,482.909,67.2z M477.091,409.891H34.909V102.109h442.182V409.891z"/></g></g><g><g><rect fill="currentColor" x="126.836" y="84.655" width="34.909" height="342.109"/></g></g><g><g><rect fill="currentColor" x="350.255" y="84.655" width="34.909" height="342.109"/></g></g><g><g><rect fill="currentColor" x="367.709" y="184.145" width="126.836" height="34.909"/></g></g><g><g><rect fill="currentColor" x="17.455" y="184.145" width="126.836" height="34.909"/></g></g><g><g><rect fill="currentColor" x="367.709" y="292.364" width="126.836" height="34.909"/></g></g><g><g><rect fill="currentColor" x="17.455" y="292.364" width="126.836" height="34.909"/></g></g></svg>';
+
     var SESSION_ID = '';
 
     var SOURCE_NAME = 'LNUM';
@@ -34,6 +38,37 @@
         collection: 'collection'
     };
 
+    var CAT_NAME = SOURCE_NAME;
+
+    var DISPLAY_OPTIONS = {
+        releases: {
+            title: Lampa.Lang.translate('title_in_high_quality')
+        },
+        episodes: {
+            title: Lampa.Lang.translate('title_upcoming_episodes')
+        },
+        movies: {
+            title: Lampa.Lang.translate('menu_movies')
+        },
+        tv: {
+            title: Lampa.Lang.translate('menu_tv')
+        },
+        cartoons: {
+            title: Lampa.Lang.translate('menu_multmovie')
+        },
+        cartoons_tv: {
+            title: Lampa.Lang.translate('menu_multtv')
+        },
+        anime: {
+            title: Lampa.Lang.translate('menu_anime')
+        },
+        legends: {
+            title: Lampa.Lang.translate('title_top_movie')
+        },
+        collections: {
+            title: Lampa.Lang.translate('collections')
+        }
+    };
 
     function LNumApiService() {
         var self = this;
@@ -177,43 +212,64 @@
 
         self.category = function (params, onSuccess, onError) {
             params = params || {};
-
             var partsLimit = 5;
+            var partsData = [];
 
-            var partsData = [
-                function (callback) {
-                    makeRequest(LINE_TYPES.base, BASE_CATEGORIES.releases, Lampa.Lang.translate('title_in_high_quality'), callback);
-                },
-                function (callback) {
+            if (DISPLAY_OPTIONS.releases.visible) {
+                partsData.push(function (callback) {
+                    makeRequest(LINE_TYPES.base, BASE_CATEGORIES.releases, DISPLAY_OPTIONS.releases.title, callback);
+                });
+            }
+
+            if (DISPLAY_OPTIONS.episodes.visible) {
+                partsData.push(function (callback) {
                     callback({
                         source: 'tmdb',
                         results: Lampa.TimeTable.lately().slice(0, 20),
-                        title: Lampa.Lang.translate('title_upcoming_episodes'),
+                        title: DISPLAY_OPTIONS.episodes.title,
                         nomore: true,
                         cardClass: function (elem, params) {
                             return new Episode(elem, params);
                         }
                     });
-                },
-                function (callback) {
-                    makeRequest(LINE_TYPES.base, BASE_CATEGORIES.movies, Lampa.Lang.translate('menu_movies'), callback);
-                },
-                function (callback) {
-                    makeRequest(LINE_TYPES.base, BASE_CATEGORIES.tv, Lampa.Lang.translate('menu_tv'), callback);
-                },
-                function (callback) {
-                    makeRequest(LINE_TYPES.base, BASE_CATEGORIES.cartoons, Lampa.Lang.translate('menu_multmovie'), callback);
-                },
-                function (callback) {
-                    makeRequest(LINE_TYPES.base, BASE_CATEGORIES.cartoons_tv, Lampa.Lang.translate('menu_multtv'), callback);
-                },
-                function (callback) {
-                    makeRequest(LINE_TYPES.base, BASE_CATEGORIES.anime, Lampa.Lang.translate('menu_anime'), callback);
-                },
-                function (callback) {
-                    makeRequest(LINE_TYPES.base, BASE_CATEGORIES.legends, Lampa.Lang.translate('title_top_movie'), callback);
-                }
-            ];
+                });
+            }
+
+            if (DISPLAY_OPTIONS.movies.visible) {
+                partsData.push(function (callback) {
+                    makeRequest(LINE_TYPES.base, BASE_CATEGORIES.movies, DISPLAY_OPTIONS.movies.title, callback);
+                });
+            }
+
+            if (DISPLAY_OPTIONS.tv.visible) {
+                partsData.push(function (callback) {
+                    makeRequest(LINE_TYPES.base, BASE_CATEGORIES.tv, DISPLAY_OPTIONS.tv.title, callback);
+                });
+            }
+
+            if (DISPLAY_OPTIONS.cartoons.visible) {
+                partsData.push(function (callback) {
+                    makeRequest(LINE_TYPES.base, BASE_CATEGORIES.cartoons, DISPLAY_OPTIONS.cartoons.title, callback);
+                });
+            }
+
+            if (DISPLAY_OPTIONS.cartoons_tv.visible) {
+                partsData.push(function (callback) {
+                    makeRequest(LINE_TYPES.base, BASE_CATEGORIES.cartoons_tv, DISPLAY_OPTIONS.cartoons_tv.title, callback);
+                });
+            }
+
+            if (DISPLAY_OPTIONS.anime.visible) {
+                partsData.push(function (callback) {
+                    makeRequest(LINE_TYPES.base, BASE_CATEGORIES.anime, DISPLAY_OPTIONS.anime.title, callback);
+                });
+            }
+
+            if (DISPLAY_OPTIONS.legends.visible) {
+                partsData.push(function (callback) {
+                    makeRequest(LINE_TYPES.base, BASE_CATEGORIES.legends, DISPLAY_OPTIONS.legends.title, callback);
+                });
+            }
 
             function loadCollectionsAndProceed() {
                 if (COLLECTIONS.length > 0) {
@@ -259,7 +315,9 @@
             function getCollectionLines() {
                 var collectionLinesRaw = [];
 
-                if (COLLECTIONS.length === 0) {
+                debugger;
+
+                if (!DISPLAY_OPTIONS.collections.visible || COLLECTIONS.length === 0) {
                     return [];
                 }
 
@@ -488,6 +546,56 @@
         };
     }
 
+    function addTranslates() {
+        
+        Lampa.Lang.add({
+            title_in_high_quality: {
+                en: 'In high quality',
+                uk: 'У високій якості'
+            },
+            donate: {
+                en: 'Donate',
+                uk: 'Підтримати',
+                ru: 'Поддержать'
+            },
+            donate_title: {
+                en: 'Thank you for using the LNUM plugin',
+                uk: 'Дякую, що користуєшься плагіном LNUM',
+                ru: 'Спасибо, что пользуетесь плагином LNUM'
+            },
+            donate_text: {
+                en: "If you enjoy the plugin, buy me a coffee — it'll fuel the plugin's growth and new projects!",
+                uk: 'Якщо Вам подобається плагін, пригостіть мене кавою — це дасть енергії для розвитку та нових проектів!',
+                ru: 'Если Вам нравится работа плагина, угостите меня кофе — это даст заряд для развития плагина и новых проектов!'
+            },
+            donate_footer: {
+                en: 'Want to say thanks another way? Message me on Telegram:',
+                uk: 'Хочете подякувати інакше? Пишіть у Telegram:',
+                ru: 'Хотите отблагодарить иначе? Напишите в Telegram:'
+            },
+            collections: {
+                en: 'Collections',
+                uk: 'Колекції',
+                ru: 'Коллекции'
+            },
+            lnum_title: {
+                en: 'Title',
+                uk: 'Назва',
+                ru: 'Название'
+            },
+            lnum_title_desc: {
+                en: 'Enter a title instead of ',
+                uk: 'Введіть назву замість ',
+                ru: 'Введите своё название вместо '
+            },
+            lnum_select_visibility: {
+                en: 'Select whether the category will be visible',
+                uk: 'Виберіть чи буде відображатися категорія',
+                ru: 'Выберете будет ли отображаться категория'
+            }
+        });
+    }
+
     function startPlugin() {
         if (window.lnum_plugin) {
             return;
@@ -542,44 +650,68 @@
             });
         });
 
+        CAT_NAME = Lampa.Storage.get('lnum_settings_cat_name', SOURCE_NAME);
+
         if (Lampa.Storage.field('start_page') === SOURCE_NAME) {
             window.start_deep_link = {
                 component: 'category',
                 page: 1,
                 url: '',
                 source: SOURCE_NAME,
-                title: SOURCE_NAME
+                title: CAT_NAME
             };
-        }
+        }   
 
         var values = Lampa.Params.values.start_page;
-        values[SOURCE_NAME] = SOURCE_NAME;
+        values[SOURCE_NAME] = CAT_NAME;
 
-        Lampa.Lang.add({
-            title_in_high_quality: {
-                en: 'In high quality',
-                uk: 'У високій якості'
+        Lampa.SettingsApi.addComponent({
+            component: 'lnum_settings',
+            name: CAT_NAME,
+            icon: ICON
+        });
+
+        Lampa.SettingsApi.addParam({
+            component: 'lnum_settings',
+            param: {
+                name: 'lnum_settings_cat_name',
+                type: 'input',
+                placeholder: '',
+                values: '',
+                default: CAT_NAME
             },
-            donate: {
-                en: 'Donate',
-                uk: 'Підтримати',
-                ru: 'Поддержать'
+            field: {
+                name: Lampa.Lang.translate('lnum_title'),
+                description: Lampa.Lang.translate('lnum_title_desc') + SOURCE_NAME
             },
-            donate_title: {
-                en: 'Thank you for using the LNUM plugin',
-                uk: 'Дякую, що користуєшься плагіном LNUM',
-                ru: 'Спасибо, что пользуетесь плагином LNUM'
-            },
-            donate_text: {
-                en: "If you enjoy the plugin, buy me a coffee — it'll fuel the plugin's growth and new projects!",
-                uk: 'Якщо Вам подобається плагін, пригостіть мене кавою — це дасть енергії для розвитку та нових проектів!',
-                ru: 'Если Вам нравится работа плагина, угостите меня кофе — это даст заряд для развития плагина и новых проектов!'
-            },
-            donate_footer: {
-                en: 'Want to say thanks another way? Message me on Telegram:',
-                uk: 'Хочете подякувати інакше? Пишіть у Telegram:',
-                ru: 'Хотите отблагодарить иначе? Напишите в Telegram:'
+            onChange: function (value) {
+                CAT_NAME = value;
+                $('.lnum_cat_text').text(value);
+                Lampa.Settings.update();
             }
+        });
+
+        Object.keys(DISPLAY_OPTIONS).forEach(function(option) {
+            var settingName = 'lnum_settings_' + option + '_visible';
+
+            var visible = Lampa.Storage.get(settingName, "true").toString() === "true";
+            DISPLAY_OPTIONS[option].visible = visible;
+
+            Lampa.SettingsApi.addParam({
+                component: "lnum_settings",
+                param: {
+                  name: settingName,
+                  type: "trigger",
+                  default: visible
+                },
+                field: {
+                  name: DISPLAY_OPTIONS[option].title,
+                  description: Lampa.Lang.translate('lnum_select_visibility')
+                },
+                onChange: function(value) {
+                    DISPLAY_OPTIONS[option].visible = value === "true";
+                }
+            });
         });
 
         SESSION_ID = Lampa.Utils.uid();
@@ -604,12 +736,12 @@
             }
         });
 
-        var menuItem = $('<li data-action="lnum" class="menu__item selector"><div class="menu__ico"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 512 512" style="enable-background:new 0 0 512 512;" xml:space="preserve"><g><g><path fill="currentColor" d="M482.909,67.2H29.091C13.05,67.2,0,80.25,0,96.291v319.418C0,431.75,13.05,444.8,29.091,444.8h453.818c16.041,0,29.091-13.05,29.091-29.091V96.291C512,80.25,498.95,67.2,482.909,67.2z M477.091,409.891H34.909V102.109h442.182V409.891z"/></g></g><g><g><rect fill="currentColor" x="126.836" y="84.655" width="34.909" height="342.109"/></g></g><g><g><rect fill="currentColor" x="350.255" y="84.655" width="34.909" height="342.109"/></g></g><g><g><rect fill="currentColor" x="367.709" y="184.145" width="126.836" height="34.909"/></g></g><g><g><rect fill="currentColor" x="17.455" y="184.145" width="126.836" height="34.909"/></g></g><g><g><rect fill="currentColor" x="367.709" y="292.364" width="126.836" height="34.909"/></g></g><g><g><rect fill="currentColor" x="17.455" y="292.364" width="126.836" height="34.909"/></g></g></svg></div><div class="menu__text">LNUM</div></li>');
+        var menuItem = $('<li data-action="lnum" class="menu__item selector"><div class="menu__ico">' + ICON + '</div><div class="menu__text lnum_cat_text">' + CAT_NAME + '</div></li>');
         $('.menu .menu__list').eq(0).append(menuItem);
 
         menuItem.on('hover:enter', function () {
             Lampa.Activity.push({
-                title: SOURCE_NAME,
+                title: CAT_NAME,
                 component: 'category',
                 source: SOURCE_NAME,
                 page: 1
