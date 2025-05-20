@@ -103,6 +103,7 @@
                         background_image: item.background_image,
                         source: SOURCE_NAME,
                         release_quality: item.release_quality || '',
+                        release_date: item.release_date
                     };
 
                     dataItem.promo_title = dataItem.name;
