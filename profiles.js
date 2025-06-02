@@ -18,34 +18,90 @@
         broadcastScanAll: false
     };
 
+    var DEVICE_TYPES = {
+        'Amazon Fire TV': {
+            check: function(ua) { return ua.match(/Fire TV|Amazon/i); },
+            name: 'Amazon Fire TV'
+        },
+        'NVIDIA Shield TV': {
+            check: function(ua) { return ua.match(/SHIELD|NVIDIA/i); },
+            name: 'NVIDIA Shield TV'
+        },
+        'Roku': {
+            check: function(ua) { return ua.match(/Roku/i) && !ua.match(/TCL/i); },
+            name: 'Roku'
+        },
+        'Xiaomi Mi Box': {
+            check: function(ua) { return ua.match(/MiBox|Xiaomi/i); },
+            name: 'Xiaomi Mi Box'
+        },
+        'Apple TV': {
+            check: function(ua) { return Lampa.Platform.screen('tv') && ua.match(/Apple/) && ua.match(/iPad/) && !Lampa.Platform.screen('mobile'); },
+            name: 'Apple TV'
+        },
+        'LG WebOS TV': {
+            check: function(ua) { return Lampa.Platform.screen('tv') && ua.match(/WebOS|LG/i); },
+            name: 'LG WebOS TV'
+        },
+        'Samsung Tizen TV': {
+            check: function(ua) { return Lampa.Platform.screen('tv') && ua.match(/Samsung|Tizen/i); },
+            name: 'Samsung Tizen TV'
+        },
+        'Sony Bravia TV': {
+            check: function(ua) { return Lampa.Platform.screen('tv') && ua.match(/Sony|Bravia/i); },
+            name: 'Sony Bravia TV'
+        },
+        'TCL Roku TV': {
+            check: function(ua) { return Lampa.Platform.screen('tv') && ua.match(/Roku|TCL/i); },
+            name: 'TCL Roku TV'
+        },
+        'Hisense VIDAA TV': {
+            check: function(ua) { return Lampa.Platform.screen('tv') && ua.match(/VIDAA|Hisense/i); },
+            name: 'Hisense VIDAA TV'
+        },
+        'Smart TV': {
+            check: function(ua) { return Lampa.Platform.screen('tv') && ua.match(/Smart-TV|Smart TV/i); },
+            name: 'Smart TV'
+        },
+        'Android Device': {
+            check: function(ua) { return ua.match(/Android/) && !Lampa.Platform.screen('tv'); },
+            name: 'Android Device'
+        },
+            'Android TV': {
+            check: function(ua) { return Lampa.Platform.screen('tv') && ua.match(/Android/) && !ua.match(/MiBox|SHIELD/i); },
+            name: 'Android TV'
+        },
+        'iPhone': {
+            check: function(ua) { return ua.match(/iPhone/); },
+            name: 'iPhone'
+        },
+        'iPad': {
+            check: function(ua) { return ua.match(/iPad/) && Lampa.Platform.screen('mobile'); },
+            name: 'iPad'
+        },
+        'Mac Device': {
+            check: function(ua) { return ua.match(/Macintosh|iPad/) && !Lampa.Platform.screen('mobile'); },
+            name: 'Mac Device'
+        },
+        'Windows PC': {
+            check: function(ua) { return ua.match(/Windows/); },
+            name: 'Windows PC'
+        }
+    };
+
     var Utils = {
         Device: {
             extractName(userAgent) {
-                userAgent = userAgent || '';
-                var deviceDetails = userAgent.match(/\((.*?)\)/);
-                deviceDetails = deviceDetails ? deviceDetails[1] : 'Unknown Details';
-
-                var platform = Lampa.Platform.screen;
-
-                var deviceMap = [
-                    { re: /Android.*?(TV|Television)/, name: 'Android TV' },
-                    { re: /Apple.*?(TV|AppleTV)/, name: 'Apple TV' },
-                    { re: /WebOS|LG|Samsung|Tizen|Smart-TV|Smart|Smart TV|VIDAA|Hisense/, name: 'Smart TV', tv: true },
-                    { re: /Android/, name: 'Android Device' },
-                    { re: /iPhone/, name: 'iPhone' },
-                    { re: /iPad/, name: platform('mobile') ? 'iPad' : 'Mac Device' },
-                    { re: /Macintosh/, name: 'Mac Device' },
-                    { re: /iPod/, name: 'iPod' },
-                    { re: /Windows/, name: 'Windows PC' }
-                ];
-
-                for (var i = 0; i < deviceMap.length; i++) {
-                    var device = deviceMap[i];
-                    if (device.re.test(userAgent) && (!device.tv || platform('tv'))) {
-                        return device.name + ' - (' + deviceDetails + ')';
+                if (!userAgent || typeof userAgent !== 'string') {
+                    return 'Unknown Device - (Unknown Details)';
+                }
+                var deviceMatch = userAgent.match(/\((.*?)\)/);
+                var deviceDetails = deviceMatch ? deviceMatch[1] : 'Unknown Details';
+                for (var key in DEVICE_TYPES) {
+                    if (DEVICE_TYPES.hasOwnProperty(key) && DEVICE_TYPES[key].check(userAgent)) {
+                        return DEVICE_TYPES[key].name + ' - (' + deviceDetails + ')';
                     }
                 }
-
                 return 'Unknown Device - (' + deviceDetails + ')';
             },
             getInfo: function () {
