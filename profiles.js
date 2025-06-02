@@ -59,16 +59,24 @@
             check: function(ua) { return Lampa.Platform.screen('tv') && ua.match(/VIDAA|Hisense/i); },
             name: 'Hisense VIDAA TV'
         },
-        'Smart TV': {
-            check: function(ua) { return Lampa.Platform.screen('tv') && ua.match(/Smart-TV|Smart TV/i); },
-            name: 'Smart TV'
+        'Haier Smart TV': {
+            check: function(ua) { return Lampa.Platform.screen('tv') && ua.match(/Haier/i); },
+            name: 'Haier Smart TV'
+        },
+        'Yandex Smart TV': {
+            check: function(ua) { return Lampa.Platform.screen('tv') && ua.match(/YNDX|Yandex|YandexTV/i); },
+            name: 'Yandex Smart TV'
         },
         'Android Device': {
             check: function(ua) { return ua.match(/Android/) && !Lampa.Platform.screen('tv'); },
             name: 'Android Device'
         },
-            'Android TV': {
-            check: function(ua) { return Lampa.Platform.screen('tv') && ua.match(/Android/) && !ua.match(/MiBox|SHIELD/i); },
+        'Smart TV': {
+            check: function(ua) { return Lampa.Platform.screen('tv') && ua.match(/Smart-TV|Smart TV|TV/i); },
+            name: 'Smart TV'
+        },
+        'Android TV': {
+            check: function(ua) { return Lampa.Platform.screen('tv') && ua.match(/Android/) && !ua.match(/MiBox|SHIELD|Yandex/i); },
             name: 'Android TV'
         },
         'iPhone': {
@@ -76,7 +84,7 @@
             name: 'iPhone'
         },
         'iPad': {
-            check: function(ua) { return ua.match(/iPad/) && Lampa.Platform.screen('mobile'); },
+            check: function(ua) { return ua.match(/iPad|Macintosh/) && Lampa.Platform.screen('mobile'); },
             name: 'iPad'
         },
         'Mac Device': {
