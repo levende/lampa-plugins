@@ -1,6 +1,16 @@
 (function () {
     'use strict';
 
+    // Polyfills
+    if(!Array.prototype.forEach){Array.prototype.forEach=function(c,t){var o=Object(this),l=o.length>>>0,k=0;if(typeof c!=="function")throw new TypeError(c+" is not a function");if(arguments.length>1)t=thisArg;while(k<l){if(k in o)c.call(t,o[k],k,o);k++};};}
+    if(!Array.prototype.some){Array.prototype.some=function(c,t){var o=Object(this),l=o.length>>>0,i=0;if(typeof c!=="function")throw new TypeError(c+" is not a function");for(;i<l;i++)if(i in o&&c.call(t,o[i],i,o))return true;return false;};}
+    if(!Array.prototype.map){Array.prototype.map=function(c,t){var o=Object(this),l=o.length>>>0,a=new Array(l),k=0;if(typeof c!=="function")throw new TypeError(c+" is not a function");if(arguments.length>1)t=thisArg;while(k<l){if(k in o)a[k]=c.call(t,o[k],k,o);k++;}return a;};}
+    if(!Array.prototype.filter){Array.prototype.filter=function(c,t){var o=Object(this),l=o.length>>>0,r=[],i=0;if(typeof c!=="function")throw new TypeError(c+" is not a function");for(;i<l;i++)if(i in o&&c.call(t,o[i],i,o))r.push(o[i]);return r;};}
+    if(!Object.keys){Object.keys=function(){var h=Object.prototype.hasOwnProperty,d=!({toString:null}).propertyIsEnumerable("toString"),e=["toString","toLocaleString","valueOf","hasOwnProperty","isPrototypeOf","propertyIsEnumerable","constructor"],l=e.length;return function(o){if(typeof o!=="object"&&(typeof o!=="function"||o===null))throw new TypeError("Object.keys called on non-object");var r=[],p,i;for(p in o)if(h.call(o,p))r.push(p);if(d)for(i=0;i<l;i++)if(h.call(o,e[i]))r.push(e[i]);return r;};}();}
+    (function(){if(typeof window.CustomEvent==="function")return false;function CustomEvent(e,p){p=p||{bubbles:false,cancelable:false,detail:undefined};var evt=document.createEvent("CustomEvent");evt.initCustomEvent(e,p.bubbles,p.cancelable,p.detail);return evt;}CustomEvent.prototype=window.Event.prototype;window.CustomEvent=CustomEvent;})();
+    if(!navigator.userAgent)navigator.userAgent="";
+    if(!document.createEvent)document.createEvent=function(t){var e=document.createEventObject();e.type=t;e.bubbles=false;e.cancelable=false;return e;};
+
     var pluginManifest = {
         version: '2.5.0',
         author: 'levende',
@@ -127,48 +137,6 @@
 
                 return deviceInfo;
             }
-        },
-        Array: {
-            find: function (array, predicate) {
-                for (var i = 0; i < array.length; i++) {
-                    if (predicate(array[i], i, array)) {
-                        return array[i];
-                    }
-                }
-                return null;
-            },
-            some: function (array, predicate) {
-                for (var i = 0; i < array.length; i++) {
-                    if (predicate(array[i], i, array)) {
-                        return true;
-                    }
-                }
-                return false;
-            },
-        },
-        Date: {
-            now: function () {
-                return new Date().getTime();
-            }
-        },
-        Object: {
-            keys: function (obj) {
-                var keys = [];
-                for (var key in obj) {
-                    if (obj.hasOwnProperty(key)) {
-                        keys.push(key);
-                    }
-                }
-                return keys;
-            }
-        },
-        CustomEvent: {
-            get: function (event, params) {
-                params = params || { bubbles: false, cancelable: false, detail: undefined };
-                var evt = document.createEvent('CustomEvent');
-                evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
-                return evt;
-            }
         }
     };
 
@@ -221,7 +189,7 @@
     function Waiter() {
         this.wait = function (options) {
             logger.debug('Wait', { interval: options.interval, timeout: options.timeout });
-            var start = Utils.Date.now();
+            var start = new Date().getTime();
             var callback = options.callback || function () { };
 
             function checkCondition() {
@@ -230,7 +198,7 @@
                     return;
                 }
 
-                if (Utils.Date.now() - start >= options.timeout) {
+                if (new Date().getTime() - start >= options.timeout) {
                     callback(false);
                     return;
                 }
@@ -273,7 +241,7 @@
 
             function isConnectionEvent(value) {
                 var connectionTypes = self.connectionEventTypes;
-                return Utils.Array.some(Utils.Object.keys(connectionTypes), function (type) {
+                return Object.keys(connectionTypes).some(function (type) {
                     return connectionTypes[type] == value;
                 });
             }
@@ -579,14 +547,14 @@
             && externalSettings === 'object'
             && !Array.isArray(externalSettings)
 
-        Utils.Object.keys(injectableSettings).forEach(function (key) {
+        Object.keys(injectableSettings).forEach(function (key) {
             self[key] = hasExternalSettings && externalSettings.hasOwnProperty(key)
                 ? externalSettings[key]
                 : injectableSettings[key];
         });
 
         if (!!externalSettings && typeof externalSettings === 'object' && !Array.isArray(externalSettings)) {
-            Utils.Object.keys(injectableSettings).forEach(function (key) {
+            Object.keys(injectableSettings).forEach(function (key) {
                 self[key] = externalSettings.hasOwnProperty(key)
                     ? externalSettings[key]
                     : injectableSettings[key];
@@ -594,7 +562,7 @@
         }
 
         self.getCurrentProfile = function () {
-            return Utils.Array.find(self.profiles, function (profile) {
+            return self.profiles.find(function (profile) {
                 return profile.selected;
             });
         }
@@ -715,9 +683,10 @@
                 logger.debug('Sync with new profile');
                 window.sync_disable = false;
 
-                var event = Utils.CustomEvent.get('lwsEvent', {
+                var event = new CustomEvent('lwsEvent', {
                     detail: { name: 'system', data: ws.connectionEventTypes.RECONNECTED, src: ws.pluginSrc },
                 });
+
                 document.dispatchEvent(event);
             }, 200);
 
@@ -726,7 +695,7 @@
                 timeout: state.sync.time.timeout,
                 conditionFn: function () {
                     return state.sync.timestamps.every(function (timestampField) {
-                        return Lampa.Storage.get(timestampField, 0) !== 0;
+                        return !!Lampa.Storage.get(timestampField, 0);
                     })
                 },
                 callback: function (synced) {
@@ -908,7 +877,7 @@
         };
 
         function syncScriptUsed() {
-            var isSyncPluginEnabled = Utils.Array.some(Lampa.Storage.get('plugins', '[]'), function (plugin) {
+            var isSyncPluginEnabled = Lampa.Storage.get('plugins', '[]').some(function (plugin) {
                 return plugin.status == 1 && isSyncScript(plugin.url);
             });
 
@@ -920,7 +889,7 @@
                 return $(script).attr('src') || '';
             });
 
-            return Utils.Array.some(scripts, function (src) {
+            return scripts.some(function (src) {
                 return isSyncScript(src);
             });
 
@@ -960,7 +929,7 @@
                         broadcastSvc.init();
                     }
 
-                    var currentProfile = Utils.Array.find(state.profiles, function (profile) {
+                    var currentProfile = state.profiles.find(function (profile) {
                         return profile.selected;
                     });
 
