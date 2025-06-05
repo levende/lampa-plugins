@@ -109,7 +109,7 @@
 
     var Utils = {
         Device: {
-            extractName(userAgent) {
+            extractName: function (userAgent) {
                 if (!userAgent || typeof userAgent !== 'string') {
                     return 'Unknown Device - (Unknown Details)';
                 }
@@ -131,8 +131,8 @@
                     userAgent: userAgent
                 };
 
-                if (lwsEvent && lwsEvent.connectionId) {
-                    deviceInfo.wsConnectionId = lwsEvent.connectionId;
+                if (window.lwsEvent && window.lwsEvent.connectionId) {
+                    deviceInfo.wsConnectionId = window.lwsEvent.connectionId;
                 }
 
                 return deviceInfo;
@@ -265,7 +265,7 @@
 
                 if (event.detail.name === 'profiles_broadcast_open_full') {
                     var openRequest = JSON.parse(event.detail.data);
-                    if (openRequest.connectionId === lwsEvent.connectionId) {
+                    if (openRequest.connectionId === window.lwsEvent.connectionId) {
                         Lampa.Activity.push({
                             card: openRequest.data,
                             component: 'full',
@@ -279,7 +279,7 @@
                 if (event.detail.name === 'profiles_broadcast_open_player') {
                     var openRequest = JSON.parse(event.detail.data);
 
-                    if (openRequest.connectionId === lwsEvent.connectionId) {
+                    if (openRequest.connectionId === window.lwsEvent.connectionId) {
                         Lampa.Controller.toContent();
                         Lampa.Modal.open({
                             title: '',
@@ -287,20 +287,20 @@
                             html: $('<div class="about">' + Lampa.Lang.translate('confirm_open_player') + '</div>'),
                             buttons: [{
                                 name: Lampa.Lang.translate('settings_param_no'),
-                                onSelect: function onSelect() {
+                                onSelect: function () {
                                     Lampa.Modal.close();
                                     Lampa.Controller.toggle('content');
                                 }
                             }, {
                                 name: Lampa.Lang.translate('settings_param_yes'),
-                                onSelect: function onSelect() {
+                                onSelect: function () {
                                     Lampa.Modal.close();
                                     Lampa.Controller.toggle('content');
                                     Lampa.Player.play(openRequest.data.player);
                                     Lampa.Player.playlist(openRequest.data.playlist);
                                 }
                             }],
-                            onBack: function onBack() {
+                            onBack: function () {
                                 Lampa.Modal.close();
                                 Lampa.Controller.toggle('content');
                             }
@@ -337,15 +337,15 @@
                         });
                     }
                 },
-                onSelect: function onSelect(a, params) {
+                onSelect: function (a, params) {
                     if (a.broadcast_play) {
                         withPlayerFromContextMenu(params.element, function (data) {
-                            broadcastPlayer(function () { return data });
+                            broadcastPlayer(function () { return data; });
                         });
                     }
                 }
             };
-        }
+        };
 
         function withPlayerFromContextMenu(element, callback) {
             if (element.method === 'play') {
@@ -367,7 +367,7 @@
                     });
                 }, function () {
                     Lampa.Noty.show(Lampa.Lang.translate('network_error'));
-                })
+                });
             } else {
                 Lampa.Noty.show(Lampa.Lang.translate('network_error'));
             }
@@ -417,7 +417,7 @@
                 html: template,
                 size: 'small',
                 mask: true,
-                onBack: function onBack() {
+                onBack: function () {
                     document.removeEventListener('lwsEvent', handleDiscoveryResponse);
                     Lampa.Modal.close();
                     Lampa.Controller.toggle(enabled);
@@ -458,14 +458,14 @@
                 version: '1.0.0',
                 name: Lampa.Lang.translate('broadcast_open'),
                 description: '',
-                onContextMenu: function(object) {
+                onContextMenu: function (object) {
                     if (ws.connected) return;
                     return {
                         name: Lampa.Lang.translate('broadcast_open'),
                         description: ''
-                    }
+                    };
                 },
-                onContextLauch: function(data) {
+                onContextLauch: function (data) {
                     broadcast(Lampa.Lang.translate('broadcast_open'), function (device) {
                         if (!data.method) {
                             data.method = data.number_of_seasons || data.seasons || data.last_episode_to_air || data.first_episode_to_air || data.first_air_date ? 'tv' : 'movie';
@@ -477,13 +477,13 @@
                             data: data,
                             connectionId: device.wsConnectionId
                         };
-    
+
                         window.lwsEvent.send('profiles_broadcast_open_full', JSON.stringify(openRequest));
                     });
                 }
-            }
-        
-            Lampa.Manifest.plugins = manifest
+            };
+
+            Lampa.Manifest.plugins = manifest;
         }
 
         function addBroadcastButton() {
@@ -544,8 +544,8 @@
 
         var externalSettings = window.profiles_settings;
         var hasExternalSettings = !!externalSettings
-            && externalSettings === 'object'
-            && !Array.isArray(externalSettings)
+            && typeof externalSettings === 'object'
+            && !Array.isArray(externalSettings);
 
         Object.keys(injectableSettings).forEach(function (key) {
             self[key] = hasExternalSettings && externalSettings.hasOwnProperty(key)
@@ -565,7 +565,7 @@
             return self.profiles.find(function (profile) {
                 return profile.selected;
             });
-        }
+        };
 
         self.isRefreshType = function (refreshType) {
             return Lampa.Storage.get('lampac_profile_upt_type', 'soft') == refreshType;
@@ -670,7 +670,7 @@
                     },
                 });
             });
-        }
+        };
 
         function switchOnlineProfile(currentProfile, newProfile, refresh) {
             reset();
@@ -696,7 +696,7 @@
                 conditionFn: function () {
                     return state.sync.timestamps.every(function (timestampField) {
                         return !!Lampa.Storage.get(timestampField, 0);
-                    })
+                    });
                 },
                 callback: function (synced) {
                     Lampa.Loading.stop();
@@ -755,7 +755,7 @@
             activity.outdated = false;
 
             logger.info('Page has been soft refreshed', activity);
-        }
+        };
 
         function reset() {
             state.sync.keys.forEach(localStorage.removeItem.bind(localStorage));
@@ -802,13 +802,13 @@
 
         function cubSyncEnabled() {
             return !!Lampa.Storage.get('account', '{}').token && Lampa.Storage.get('account_use', false);
-        };
+        }
 
         function testBackendAccess(callback) {
             apiSvc.send(
                 state.host + '/testaccsdb',
                 function (response) { callback(!!response && response.accsdb == false); },
-                function () { callback(false) },
+                function () { callback(false); }
             );
         }
 
@@ -819,7 +819,7 @@
             }
 
             apiSvc.send(state.host + '/reqinfo', callback);
-        };
+        }
 
         function parseProfiles(profilesObj, callback) {
             if (!profilesObj || !Array.isArray(profilesObj) || profilesObj.length == 0) {
@@ -851,7 +851,7 @@
             function hasProp(value) {
                 return value != undefined && value != null;
             }
-        };
+        }
 
         function getProfiles(callback) {
             if (state.profiles.length > 0) {
@@ -874,7 +874,7 @@
                 var params = hasUserParams ? reqinfo.user.params : reqinfo.params;
                 parseProfiles(params.profiles, callback);
             });
-        };
+        }
 
         function syncScriptUsed() {
             var isSyncPluginEnabled = Lampa.Storage.get('plugins', '[]').some(function (plugin) {
@@ -894,7 +894,7 @@
             });
 
             function isSyncScript(url) {
-                return url.indexOf('/sync.js') >= 0 || url.indexOf('/sync/') >= 0
+                return url.indexOf('/sync.js') >= 0 || url.indexOf('/sync/') >= 0;
             }
         }
 
@@ -959,10 +959,10 @@
                         syncEnabled: state.syncEnabled,
                         profileId: state.syncProfileId,
                         profiles: state.profiles,
-                    })
+                    });
                 });
             });
-        }
+        };
     }
 
     function SettingsManager(state) {
@@ -973,7 +973,7 @@
 
             addLocalization();
             addSettings();
-        }
+        };
 
         function addLocalization() {
             Lampa.Lang.add({
@@ -1116,7 +1116,7 @@
             if (event.type != 'ready') return;
             Lampa.Listener.remove('app', onAppReady);
             setTimeout(function () { new Plugin().start(); }, 500);
-        }
+        };
         Lampa.Listener.follow('app', onAppReady);
     }
 })();
