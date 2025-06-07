@@ -10,9 +10,10 @@
     (function(){if(typeof window.CustomEvent==="function")return false;function CustomEvent(e,p){p=p||{bubbles:false,cancelable:false,detail:undefined};var evt=document.createEvent("CustomEvent");evt.initCustomEvent(e,p.bubbles,p.cancelable,p.detail);return evt;}CustomEvent.prototype=window.Event.prototype;window.CustomEvent=CustomEvent;})();
     if(!navigator.userAgent)navigator.userAgent="";
     if(!document.createEvent)document.createEvent=function(t){var e=document.createEventObject();e.type=t;e.bubbles=false;e.cancelable=false;return e;};
+    if(!window.location.origin){window.location.origin=window.location.protocol+"//"+window.location.hostname+(window.location.port ? ":"+window.location.port : "");}
 
     var pluginManifest = {
-        version: '2.5.0',
+        version: '2.5.1',
         author: 'levende',
         docs: 'https://levende.github.io/lampa-plugins/docs/profiles',
         contact: 'https://t.me/levende',
