@@ -1,6 +1,17 @@
 (function () {
     'use strict';
 
+    function debounce(func, wait) {
+        var timeout;
+        return function () {
+            var context = this, args = arguments;
+            clearTimeout(timeout);
+            timeout = setTimeout(function () {
+                func.apply(context, args);
+            }, wait);
+        };
+    }
+
     function CustomFavoriteFolder(data) {
         var params = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
         this.data = data;
@@ -569,17 +580,63 @@
             });
         });
 
-        Lampa.Favorite.listener.follow('remove', function (event) {
-            if (event.method === 'card' && !event.typeId && customFavorite.getCards().indexOf(event.card.id) >= 0) {
+        Lampa.Favorite.listener.follow('remove', (function () {
+            var eventQueue = [];
+            var isProcessing = false;
+
+            function processEvents() {
+                if (eventQueue.length === 0 || isProcessing) {
+                    return;
+                }
+
+                isProcessing = true;
+
                 var favorite = customFavorite.getFavorite();
-                favorite.card.push(event.card);
-                Lampa.Storage.set('favorite', favorite);
+                var cardsToAdd = [];
+                var i, event;
+
+                for (i = 0; i < eventQueue.length; i++) {
+                    event = eventQueue[i];
+                    if (event.method === 'card' && !event.typeId && customFavorite.getCards().indexOf(event.card.id) >= 0) {
+                        console.error(event);
+                        cardsToAdd.push(event.card);
+                    }
+                }
+
+                if (cardsToAdd.length > 0) {
+                    for (i = 0; i < cardsToAdd.length; i++) {
+                        favorite.card.push(cardsToAdd[i]);
+                    }
+                    Lampa.Storage.set('favorite', favorite);
+                }
+
+                eventQueue = [];
+
+                var hasNonCardEvent = false;
+                for (i = 0; i < eventQueue.length; i++) {
+                    if (eventQueue[i].method !== 'card') {
+                        hasNonCardEvent = true;
+                        break;
+                    }
+                }
+                if (hasNonCardEvent) {
+                    setTimeout(cardFavoriteSvc.refreshBookmarkIcon, 0);
+                }
+
+                isProcessing = false;
+
+                if (eventQueue.length > 0) {
+                    setTimeout(processEvents, 0);
+                }
             }
 
-            if (event.method !== 'card') {
-                setTimeout(cardFavoriteSvc.refreshBookmarkIcon, 0);
-            }
-        });
+            var debounceProcess = debounce(processEvents, 100);
+
+            return function (event) {
+                eventQueue.push(event);
+                debounceProcess();
+            };
+        })());
 
         Lampa.Lang.add({
             rename: {
@@ -647,8 +704,7 @@
         start();
     } else {
         Lampa.Listener.follow('app', function (event) {
-            if (event.type === 'ready') 
-            {
+            if (event.type === 'ready') {
                 start();
             }
         });
