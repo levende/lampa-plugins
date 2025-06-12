@@ -16,9 +16,9 @@
     var CACHE_TIME = 1000 * 60 * 60 * 3; //3h
     var cache = {};
 
-    var LNUM_BASE_URL = 'https://lnum.levende-lampa.workers.dev';
+    var LNUM_BASE_URL = 'https://lnum.levende-develop.workers.dev';
     var LNUM_TOKEN = 'LWqtqs1k1YVVIHSP';
-    var LNUM_COLLECTIONS_BASE_URL = 'https://lnum-collections.levende-lampa.workers.dev/list';
+    var LNUM_COLLECTIONS_BASE_URL = 'https://lnum-collections.levende-develop.workers.dev/list';
     var LNUM_COLLECTIONS_TOKEN = LNUM_TOKEN;
 
     var COLLECTIONS = [];
