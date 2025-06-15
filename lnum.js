@@ -127,21 +127,29 @@
                 results: (json.results || []).map(function (item) {
                     var dataItem = {
                         id: item.id,
-                        name: item.name || item.title,
-                        last_episode_to_air: item.last_episode_to_air,
-                        first_air_date: item.first_air_date,
                         poster_path: item.poster_path || item.poster || '',
                         img: item.img,
                         overview: item.overview || item.description || '',
                         vote_average: item.vote_average || 0,
                         backdrop_path: item.backdrop_path || item.backdrop || '',
                         background_image: item.background_image,
-                        source: SOURCE_NAME,
-                        release_quality: item.release_quality || '',
-                        release_date: item.release_date
+                        source: SOURCE_NAME
                     };
 
-                    dataItem.promo_title = dataItem.name;
+                    if (!!item.release_quality) dataItem.release_quality = item.release_quality;
+
+                    if (!!item.name) dataItem.name = item.name;
+                    if (!!item.title) dataItem.title = item.title;
+                    if (!!item.original_name) dataItem.original_name = item.original_name;
+                    if (!!item.original_title) dataItem.original_title = item.original_title;
+
+                    if (!!item.release_date) dataItem.release_date = item.release_date;
+                    if (!!item.first_air_date) dataItem.first_air_date = item.first_air_date;
+                    if (!!item.number_of_seasons) dataItem.number_of_seasons = item.number_of_seasons;
+                    if (!!item.last_air_date) dataItem.last_air_date = item.last_air_date;
+                    if (!!item.last_episode_to_air) data.last_episode_to_air = item.last_episode_to_air;
+
+                    dataItem.promo_title = dataItem.name || dataItem.title || dataItem.original_name || dataItem.original_title;
                     dataItem.promo = dataItem.overview;
 
                     return dataItem;
