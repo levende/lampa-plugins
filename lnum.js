@@ -147,7 +147,7 @@
                     if (!!item.first_air_date) dataItem.first_air_date = item.first_air_date;
                     if (!!item.number_of_seasons) dataItem.number_of_seasons = item.number_of_seasons;
                     if (!!item.last_air_date) dataItem.last_air_date = item.last_air_date;
-                    if (!!item.last_episode_to_air) data.last_episode_to_air = item.last_episode_to_air;
+                    if (!!item.last_episode_to_air) dataItem.last_episode_to_air = item.last_episode_to_air;
 
                     dataItem.promo_title = dataItem.name || dataItem.title || dataItem.original_name || dataItem.original_title;
                     dataItem.promo = dataItem.overview;
