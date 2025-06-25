@@ -29,4 +29,7 @@ Welcome to the page! This page contains a collection of plugins designed to enha
 ### 7. **Anti DMCA**
 - **[anti-dmca.js](https://levende.github.io/lampa-plugins/anti-dmca.js)**
 
+### 8. **Trash Filter**
+- **[https://levende.github.io/lampa-plugins/trash-filter.js](https://levende.github.io/lampa-plugins/trash-filter.js)**
+
 *Note: Please ensure you follow the installation instructions carefully and review the plugin description for any important details before use.*
