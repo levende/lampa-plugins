@@ -230,30 +230,16 @@
 
         Lampa.Listener.follow('request_secuses', function (event) {
             if (isFilterApplicable(event.params.url) && event.data && Array.isArray(event.data.results)) {
-                // Set a flag to indicate filtering is in progress
-                event.isFiltering = true;
-
-                // Create a deep clone to avoid modifying the original data prematurely
                 var originalResults = Lampa.Arrays.clone(event.data.results);
-
-                // Wrap postFilters.apply in a SimplePromise
                 new SimplePromise(function (resolve) {
                     postFilters.apply(originalResults, function (filteredResults) {
                         resolve(filteredResults);
                     });
                 }).then(function (filteredResults) {
-                    // Update event.data.results safely
                     event.data.results.length = 0;
                     for (var i = 0; i < filteredResults.length; i++) {
                         event.data.results.push(filteredResults[i]);
                     }
-                    // Clear filtering flag
-                    event.isFiltering = false;
-                    // Emit a custom event to signal completion
-                    Lampa.Listener.send('filter_complete', {
-                        url: event.params.url,
-                        data: event.data
-                    });
                 });
             }
         });
