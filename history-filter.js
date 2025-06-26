@@ -33,9 +33,7 @@
                     var historyEpisodes = getEpisodesFromHistory(item.id, favorite);
                     var timeTableEpisodes = getEpisodesFromTimeTable(item.id, timeTable);
 
-                    var releasedEpisodes = historyEpisodes.length === timeTableEpisodes.length
-                        ? historyEpisodes
-                        : mergeEpisodes(historyEpisodes, timeTableEpisodes);
+                    var releasedEpisodes = mergeEpisodes(historyEpisodes, timeTableEpisodes);
 
                     var allReleasedEpisodesWatched = allEpisodesWatched(
                         (item.original_title || item.original_name),
