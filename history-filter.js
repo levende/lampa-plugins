@@ -2,17 +2,17 @@
     'use strict';
 
     // Polyfills
-    if (!Array.prototype.map) { Array.prototype.map = function (c, t) { var o = Object(this), l = o.length >>> 0, a = new Array(l), k = 0; if (typeof c !== "function") throw new TypeError(c + " is not a function"); if (arguments.length > 1) t = thisArg; while (k < l) { if (k in o) a[k] = c.call(t, o[k], k, o); k++; } return a; }; }
     if (!Array.prototype.filter) { Array.prototype.filter = function (c, t) { var o = Object(this), l = o.length >>> 0, r = [], i = 0; if (typeof c !== "function") throw new TypeError(c + " is not a function"); for (; i < l; i++)if (i in o && c.call(t, o[i], i, o)) r.push(o[i]); return r; }; }
+    if (!Array.isArray) {Array.isArray = function(arg) {return Object.prototype.toString.call(arg) === '[object Array]';};}
 
     var postFilters = {
         filters: [
             function (results) {
+
                 var favorite = Lampa.Storage.get('favorite', '{}');
+                var timeTable = Lampa.Storage.cache('timetable', 300, []);
 
-                for (var indx = results.length - 1; indx >= 0; indx--) {
-                    var item = results[indx];
-
+                return results.filter(function(item) {
                     var mediaType = item.media_type;
 
                     if (!mediaType) {
@@ -23,58 +23,42 @@
                     var watched = !!favoriteItem && !!favoriteItem.history;
 
                     if (!watched) {
-                        continue;
+                        return true;
                     }
 
-                    if (watched && mediaType == 'movie') {
-                        results.splice(indx, 1);
-                        continue;
+                    if (watched && mediaType === 'movie') {
+                        return false;
                     }
 
-                    var historyEpisodes = getEpisodesListFromHistory(item.id, favorite);
-                    var allHistoryEpisodesWatched = allEpisodesWatched(
+                    var historyEpisodes = getEpisodesFromHistory(item.id, favorite);
+                    var timeTableEpisodes = getEpisodesFromTimeTable(item.id, timeTable);
+
+                    var releasedEpisodes = historyEpisodes.length === timeTableEpisodes.length
+                        ? historyEpisodes
+                        : mergeEpisodes(historyEpisodes, timeTableEpisodes);
+
+                    var allReleasedEpisodesWatched = allEpisodesWatched(
                         (item.original_title || item.original_name),
-                        historyEpisodes);
+                        releasedEpisodes);
 
-                    if (allHistoryEpisodesWatched) {
-                        results.splice(indx, 1);
-                        continue;
-                    }
-
-                    Lampa.TimeTable.get(item, function (timeTableEpisodes) {
-                        var releasedTimeTableEpisodes = timeTableEpisodes.filter(function (episode) {
-                            if (!episode.air_date) {
-                                return false;
-                            }
-
-                            var airDate = new Date(episode.air_date);
-                            var now = new Date();
-
-                            return airDate <= now;
-                        });
-
-                        var allTimeTableEpisodesWathced = allEpisodesWatched(
-                            (item.original_title || item.original_name),
-                            releasedTimeTableEpisodes);
-
-                        if (allTimeTableEpisodesWathced) {
-                            results.splice(indx, 1);
-                        }
-                    });
-
-                };
+                    return !allReleasedEpisodesWatched;
+                });
             }
         ],
         apply: function (results) {
+            var clone = Lampa.Arrays.clone(results);
+
             for (var i = 0; i < this.filters.length; i++) {
-                this.filters[i](results);
+                clone = this.filters[i](clone);
             }
+
+            return clone;
         }
     };
 
-    function getEpisodesListFromHistory(id, favorite) {
+    function getEpisodesFromHistory(id, favorite) {
         var historyCard = favorite.card.filter(function (card) {
-            return card.id == id && Array.isArray(card.seasons) && card.seasons.length > 0;
+            return card.id === id && Array.isArray(card.seasons) && card.seasons.length > 0;
         })[0];
 
         if (!historyCard) {
@@ -107,6 +91,44 @@
         return seasonEpisodes;
     }
 
+    function getEpisodesFromTimeTable(id, timeTable) {
+        var serialTimeTable = timeTable.filter(function (item) { return item.id === id })[0] || {};
+
+        if (!Array.isArray(serialTimeTable.episodes) || serialTimeTable.episodes.length === 0) {
+            return [];
+        }
+
+        return serialTimeTable.episodes.filter(function (episode) {
+            return episode.season_number > 0
+                && episode.air_date
+                && new Date(episode.air_date) < new Date();
+        });
+    }
+
+    function mergeEpisodes(arr1, arr2) {
+        var allEpisodes = arr1.concat(arr2);
+        var result = [];
+
+        for (var i = 0; i < allEpisodes.length; i++) {
+            var episode = allEpisodes[i];
+            var isDuplicate = false;
+
+            for (var j = 0; j < result.length; j++) {
+                if (result[j].season_number === episode.season_number
+                    && result[j].episode_number === episode.episode_number) {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+
+            if (!isDuplicate) {
+                result.push(episode);
+            }
+        }
+
+        return result;
+    }
+
     function allEpisodesWatched(originalTitle, episodes) {
         if (!episodes || episodes.length === 0) {
             return false;
@@ -134,8 +156,8 @@
 
     function isFilterApplicable(baseUrl) {
         return baseUrl.indexOf(Lampa.TMDB.api('')) > -1
-            && baseUrl.indexOf('/search') == -1
-            && baseUrl.indexOf('/person/') == -1;
+            && baseUrl.indexOf('/search') === -1
+            && baseUrl.indexOf('/person/') === -1;
     }
 
     function start() {
@@ -147,7 +169,7 @@
 
         Lampa.Listener.follow('request_secuses', function (event) {
             if (isFilterApplicable(event.params.url) && event.data && Array.isArray(event.data.results)) {
-                postFilters.apply(event.data.results);
+                event.data.results = postFilters.apply(event.data.results);
             }
         });
     }
