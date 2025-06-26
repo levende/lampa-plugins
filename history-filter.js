@@ -1,15 +1,68 @@
-
 (function () {
     'use strict';
 
+    // Minimal Promise-like implementation
+    function SimplePromise(executor) {
+        var callbacks = [];
+        var state = 'pending';
+        var value = null;
+
+        this.then = function (callback) {
+            if (state === 'fulfilled') {
+                callback(value);
+            } else {
+                callbacks.push(callback);
+            }
+            return this; // Allow basic chaining for simplicity
+        };
+
+        function resolve(result) {
+            if (state !== 'pending') return;
+            state = 'fulfilled';
+            value = result;
+            for (var i = 0; i < callbacks.length; i++) {
+                callbacks[i](value);
+            }
+        }
+
+        executor(resolve);
+    }
+
     // Polyfills
-    if (!Array.prototype.map) { Array.prototype.map = function (c, t) { var o = Object(this), l = o.length >>> 0, a = new Array(l), k = 0; if (typeof c !== "function") throw new TypeError(c + " is not a function"); if (arguments.length > 1) t = thisArg; while (k < l) { if (k in o) a[k] = c.call(t, o[k], k, o); k++; } return a; }; }
-    if (!Array.prototype.filter) { Array.prototype.filter = function (c, t) { var o = Object(this), l = o.length >>> 0, r = [], i = 0; if (typeof c !== "function") throw new TypeError(c + " is not a function"); for (; i < l; i++)if (i in o && c.call(t, o[i], i, o)) r.push(o[i]); return r; }; }
+    if (!Array.prototype.map) {
+        Array.prototype.map = function (c, t) {
+            var o = Object(this), l = o.length >>> 0, a = new Array(l), k = 0;
+            if (typeof c !== "function") throw new TypeError(c + " is not a function");
+            if (arguments.length > 1) t = thisArg;
+            while (k < l) {
+                if (k in o) a[k] = c.call(t, o[k], k, o);
+                k++;
+            }
+            return a;
+        };
+    }
+    if (!Array.prototype.filter) {
+        Array.prototype.filter = function (c, t) {
+            var o = Object(this), l = o.length >>> 0, r = [], i = 0;
+            if (typeof c !== "function") throw new TypeError(c + " is not a function");
+            for (; i < l; i++) if (i in o && c.call(t, o[i], i, o)) r.push(o[i]);
+            return r;
+        };
+    }
 
     var postFilters = {
         filters: [
-            function (results, done) {
-                filterAsync(results, function (item, keep) {
+            function (results, callback) {
+                var filteredResults = [];
+                var index = 0;
+
+                function processItem() {
+                    if (index >= results.length) {
+                        callback(filteredResults);
+                        return;
+                    }
+
+                    var item = results[index];
                     var mediaType = item.media_type;
 
                     if (!mediaType && !!item.first_air_date) {
@@ -17,24 +70,33 @@
                     }
 
                     if (!mediaType) {
-                        return keep(true);
+                        filteredResults.push(item);
+                        index++;
+                        processItem();
+                        return;
                     }
 
                     var favoriteItem = Lampa.Favorite.check(item);
                     var watched = !!favoriteItem && !!favoriteItem.history;
 
                     if (!watched) {
-                        return keep(true);
+                        filteredResults.push(item);
+                        index++;
+                        processItem();
+                        return;
                     }
 
                     if (watched && mediaType === 'movie') {
-                        return keep(false);
+                        index++;
+                        processItem();
+                        return;
                     }
 
                     Lampa.TimeTable.get(item, function (timeTableEpisodes) {
                         var releasedTimeTableEpisodes = timeTableEpisodes.filter(function (episode) {
-                            if (!episode.air_date) return false;
-
+                            if (!episode.air_date) {
+                                return false;
+                            }
                             var airDate = new Date(episode.air_date);
                             var now = new Date();
                             return airDate <= now;
@@ -67,20 +129,34 @@
                             episodes
                         );
 
-                        keep(!lastSeasonWatched);
+                        if (!lastSeasonWatched) {
+                            filteredResults.push(item);
+                        }
+
+                        index++;
+                        processItem();
                     });
-                }, done);
+                }
+
+                processItem();
             }
         ],
-
-        apply: function (results, done) {
+        apply: function (results, callback) {
             var clone = Lampa.Arrays.clone(results);
+            var self = this;
 
-            if (!this.filters.length) return done(clone);
+            function applyFilters(filterIndex, currentResults) {
+                if (filterIndex >= self.filters.length) {
+                    callback(currentResults);
+                    return;
+                }
 
-            this.filters[0](clone, function (filteredResults) {
-                done(filteredResults);
-            });
+                self.filters[filterIndex](currentResults, function (filtered) {
+                    applyFilters(filterIndex + 1, filtered);
+                });
+            }
+
+            applyFilters(0, clone);
         }
     };
 
@@ -141,28 +217,6 @@
         return true;
     }
 
-    function filterAsync(array, predicate, callback) {
-        var result = [];
-        var index = 0;
-
-        function next() {
-            if (index >= array.length) {
-                callback(result);
-                return;
-            }
-
-            var item = array[index];
-
-            predicate(item, function (keep) {
-                if (keep) result.push(item);
-                index++;
-                next();
-            });
-        }
-
-        next();
-    }
-
     function isFilterApplicable(baseUrl) {
         return baseUrl.indexOf(Lampa.TMDB.api('')) > -1 && baseUrl.indexOf('search') == -1;
     }
@@ -176,8 +230,30 @@
 
         Lampa.Listener.follow('request_secuses', function (event) {
             if (isFilterApplicable(event.params.url) && event.data && Array.isArray(event.data.results)) {
-                postFilters.apply(event.data.results, function(filtered) {
-                    event.data.results = filtered;
+                // Set a flag to indicate filtering is in progress
+                event.isFiltering = true;
+
+                // Create a deep clone to avoid modifying the original data prematurely
+                var originalResults = Lampa.Arrays.clone(event.data.results);
+
+                // Wrap postFilters.apply in a SimplePromise
+                new SimplePromise(function (resolve) {
+                    postFilters.apply(originalResults, function (filteredResults) {
+                        resolve(filteredResults);
+                    });
+                }).then(function (filteredResults) {
+                    // Update event.data.results safely
+                    event.data.results.length = 0;
+                    for (var i = 0; i < filteredResults.length; i++) {
+                        event.data.results.push(filteredResults[i]);
+                    }
+                    // Clear filtering flag
+                    event.isFiltering = false;
+                    // Emit a custom event to signal completion
+                    Lampa.Listener.send('filter_complete', {
+                        url: event.params.url,
+                        data: event.data
+                    });
                 });
             }
         });
