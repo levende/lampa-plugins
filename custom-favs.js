@@ -598,7 +598,6 @@
                 for (i = 0; i < eventQueue.length; i++) {
                     event = eventQueue[i];
                     if (event.method === 'card' && !event.typeId && customFavorite.getCards().indexOf(event.card.id) >= 0) {
-                        console.error(event);
                         cardsToAdd.push(event.card);
                     }
                 }
