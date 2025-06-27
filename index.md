@@ -31,6 +31,9 @@ Welcome to the page! This page contains a collection of plugins designed to enha
 
 ### 8. **Filters**
 - Trash filter: **[https://levende.github.io/lampa-plugins/trash-filter.js](https://levende.github.io/lampa-plugins/trash-filter.js)**
-- History filter: **[https://levende.github.io/lampa-plugins/history-filter.js](https://levende.github.io/lampa-plugins/history-filter.js)** 
+- History filter: **[https://levende.github.io/lampa-plugins/history-filter.js](https://levende.github.io/lampa-plugins/history-filter.js)**
+
+### 9. **Random Scheduled**
+- **[https://levende.github.io/lampa-plugins/random-scheduled.js](https://levende.github.io/lampa-plugins/random-scheduled.js)**
 
 *Note: Please ensure you follow the installation instructions carefully and review the plugin description for any important details before use.*
