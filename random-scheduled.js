@@ -3,8 +3,31 @@
 
     // Polyfills
     if (!Array.prototype.filter) { Array.prototype.filter = function (c, t) { var o = Object(this), l = o.length >>> 0, r = [], i = 0; if (typeof c !== "function") throw new TypeError(c + " is not a function"); for (; i < l; i++)if (i in o && c.call(t, o[i], i, o)) r.push(o[i]); return r; }; }
+    if (!Array.prototype.slice) Array.prototype.slice = function (s, e) { var l = this.length >>> 0; s = parseInt(s) || 0; s = s < 0 ? Math.max(0, l + s) : Math.min(l, s); e = e === undefined ? l : parseInt(e); e = e < 0 ? Math.max(0, l + e) : Math.min(l, e); var r = []; for (var i = s; i < e; i++)r.push(this[i]); return r; };
+    if (!Array.isArray) {Array.isArray = function(arg) {return Object.prototype.toString.call(arg) === '[object Array]';};}
 
     var errorTranslated = false;
+
+    function shuffleArray(array) {
+        if (!Array.isArray(array)) {
+            throw new TypeError(' Expected a non-empty array');
+        }
+
+        if (array.length === 0) {
+            return [];
+        }
+
+        var arr = array.slice(0);
+        var i = arr.length - 1;
+        while (i > 0) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var temp = arr[i];
+            arr[i] = arr[j];
+            arr[j] = temp;
+            i--;
+        }
+        return arr;
+    }
 
     function start() {
         if (window.random_scheduled_plugin) {
@@ -86,7 +109,7 @@
             .concat(favorite.look || [])
             .concat(favorite.thrown || [])
             .concat(favorite.viewed || []);
-        
+
         var notWatched = merge.length === 1
             ? merge
             : merge.filter(function (item, index, array) {
@@ -97,7 +120,7 @@
             return null;
         }
 
-        var randomItem = notWatched[Math.floor(Math.random() * notWatched.length)];
+        var randomItem = shuffleArray(notWatched)[0];
         return cards.filter(function (card) { return card.id === randomItem })[0];
     }
 
