@@ -169,18 +169,30 @@
 
         window.history_filter_plugin = true;
 
+        Lampa.Listener.follow('line', function (event) {
+            if (event.type !== 'append'
+                || !event.data
+                || !Array.isArray(event.data.results)
+                || !event.data.original_length
+                || !event.data.filter_length) {
+                return;
+            }
+
+            if (event.data.filter_length === event.data.original_length) {
+                return;
+            }
+
+            if (event.items.length === event.data.filter_length) {
+                Lampa.Controller.collectionAppend(event.line.more());
+            }
+        });
+
         Lampa.Listener.follow('request_secuses', function (event) {
             if (isFilterApplicable(event.params.url) && event.data && Array.isArray(event.data.results)) {
-                var originResults = event.data.results;
-                event.data.results = postFilters.apply(originResults);
-
-                if (event.data.results.length < originResults.length) {
-                    event.data.results.length = originResults.length;
-
-                    for (var i = event.data.results.length; i < originResults.length; i++) {
-                        event.data.results[i] = { ready: true };
-                    }
-                }
+                event.data.original_length = event.data.results.length;
+                event.data.results = postFilters.apply(event.data.results);
+                event.data.filter_length = event.data.results.length;
+                event.data.results.length = event.data.original_length;
             }
         });
     }
