@@ -42,7 +42,7 @@
                         return true;
                     }
 
-                    return item.vote_count > 50;
+                    return item.vote_count >= 30;
                 });
             }
         ],
