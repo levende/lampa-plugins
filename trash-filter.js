@@ -33,7 +33,7 @@
         filters: [
             function(results) {
                 return results.filter(function(item) {
-                    if (!item.original_language) {
+                    if (!item || !item.original_language) {
                         return true;
                     }
 
