@@ -192,7 +192,7 @@
                 event.data.original_length = event.data.results.length;
                 event.data.results = postFilters.apply(event.data.results);
                 event.data.filter_length = event.data.results.length;
-                event.data.results.length = event.data.original_length;
+                // event.data.results.length = event.data.original_length;
             }
         });
     }
