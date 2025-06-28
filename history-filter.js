@@ -12,7 +12,11 @@
                 var favorite = Lampa.Storage.get('favorite', '{}');
                 var timeTable = Lampa.Storage.cache('timetable', 300, []);
 
-                return results.filter(function(item) {
+                return results.filter(function (item) {
+                    if (!item.original_language) {
+                        return true;
+                    }
+
                     var mediaType = item.media_type;
 
                     if (!mediaType) {
@@ -169,7 +173,14 @@
             if (isFilterApplicable(event.params.url) && event.data && Array.isArray(event.data.results)) {
                 var originResults = event.data.results;
                 event.data.results = postFilters.apply(originResults);
-                event.data.results.length = originResults.length;
+
+                if (event.data.results.length < originResults.length) {
+                    event.data.results.length = originResults.length;
+
+                    for (var i = event.data.results.length; i < originResults.length; i++) {
+                        event.data.results[i] = { ready: true };
+                    }
+                }
             }
         });
     }

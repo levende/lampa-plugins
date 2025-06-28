@@ -80,7 +80,14 @@
             if (isFilterApplicable(event.params.url) && event.data && Array.isArray(event.data.results)) {
                 var originResults = event.data.results;
                 event.data.results = postFilters.apply(originResults);
-                event.data.results.length = originResults.length;
+
+                if (event.data.results.length < originResults.length) {
+                    event.data.results.length = originResults.length;
+
+                    for (var i = event.data.results.length; i < originResults.length; i++) {
+                        event.data.results[i] = { ready: true };
+                    }
+                }
             }
         });
     }
