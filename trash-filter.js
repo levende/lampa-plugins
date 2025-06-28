@@ -58,7 +58,9 @@
     };
 
     function isFilterApplicable(baseUrl) {
-        return baseUrl.indexOf(Lampa.TMDB.api('')) > -1 && baseUrl.indexOf('search') == -1;
+        return baseUrl.indexOf(Lampa.TMDB.api('')) > -1
+            && baseUrl.indexOf('/search') === -1
+            && baseUrl.indexOf('/person/') === -1;
     }
 
     function start() {
@@ -76,7 +78,9 @@
 
         Lampa.Listener.follow('request_secuses', function (event) {
             if (isFilterApplicable(event.params.url) && event.data && Array.isArray(event.data.results)) {
-                event.data.results = postFilters.apply(event.data.results);
+                var originResults = event.data.results;
+                event.data.results = postFilters.apply(originResults);
+                event.data.results.length = originResults.length;
             }
         });
     }
