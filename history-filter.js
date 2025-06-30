@@ -170,7 +170,7 @@
     function hasMorePage(data) {
         return !!data
             && Array.isArray(data.results)
-            && data.original_length !== data.filter_length
+            && data.original_length !== data.results.length
             && data.page === 1
             && !!data.total_pages
             && data.total_pages > 1;
@@ -218,7 +218,7 @@
                 return;
             }
 
-            if (event.items.length === event.data.filter_length) {
+            if (event.items.length === event.data.results.length) {
                 Lampa.Controller.collectionAppend(event.line.more());
             }
         });
@@ -227,7 +227,6 @@
             if (isFilterApplicable(event.params.url) && event.data && Array.isArray(event.data.results)) {
                 if (!event.data.original_length) event.data.original_length = event.data.results.length;
                 event.data.results = postFilters.apply(event.data.results);
-                event.data.filter_length = event.data.results.length;
             }
         });
     }
