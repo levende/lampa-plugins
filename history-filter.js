@@ -180,7 +180,7 @@
         if (window.history_filter_plugin) {
             return;
         }
-
+https://github.com/levende/lampa-plugins/tree/master
         window.history_filter_plugin = true;
 
         Lampa.Listener.follow('line', function (event) {
@@ -218,7 +218,7 @@
                 return;
             }
 
-            if (event.items.length === event.data.results.length) {
+            if (event.items.length === event.data.results.length && Lampa.Controller.own(event.line)) {
                 Lampa.Controller.collectionAppend(event.line.more());
             }
         });
