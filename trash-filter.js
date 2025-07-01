@@ -114,7 +114,7 @@
                 return;
             }
 
-            if (event.items.length === event.data.results.length) {
+            if (event.items.length === event.data.results.length && Lampa.Controller.own(event.line)) {
                 Lampa.Controller.collectionAppend(event.line.more());
             }
         });
