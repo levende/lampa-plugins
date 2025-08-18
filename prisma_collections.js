@@ -42,7 +42,6 @@
         if (_this2.onHover) _this2.onHover(_this2.item, data);
       });
       this.item.addEventListener('hover:enter', function () {
-        debugger;
         Lampa.Activity.push({
           url: data.hpu,
           collection: data,
