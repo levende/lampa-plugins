@@ -11,6 +11,8 @@
 
     var SESSION_ID = '';
 
+    var HIDE_MENU = false;
+
     var SOURCE_NAME = 'LNUM';
     var CACHE_SIZE = 100;
     var CACHE_TIME = 1000 * 60 * 60 * 3; //3h
@@ -555,7 +557,7 @@
     }
 
     function addTranslates() {
-        
+
         Lampa.Lang.add({
             title_in_high_quality: {
                 en: 'In high quality',
@@ -668,7 +670,7 @@
                 source: SOURCE_NAME,
                 title: CAT_NAME
             };
-        }   
+        }
 
         var values = Lampa.Params.values.start_page;
         values[SOURCE_NAME] = CAT_NAME;
@@ -708,13 +710,13 @@
             Lampa.SettingsApi.addParam({
                 component: "lnum_settings",
                 param: {
-                  name: settingName,
-                  type: "trigger",
-                  default: visible
+                    name: settingName,
+                    type: "trigger",
+                    default: visible
                 },
                 field: {
-                  name: DISPLAY_OPTIONS[option].title,
-                  description: Lampa.Lang.translate('lnum_select_visibility')
+                    name: DISPLAY_OPTIONS[option].title,
+                    description: Lampa.Lang.translate('lnum_select_visibility')
                 },
                 onChange: function(value) {
                     DISPLAY_OPTIONS[option].visible = value === "true";
@@ -744,17 +746,21 @@
             }
         });
 
-        var menuItem = $('<li data-action="lnum" class="menu__item selector"><div class="menu__ico">' + ICON + '</div><div class="menu__text lnum_cat_text">' + CAT_NAME + '</div></li>');
-        $('.menu .menu__list').eq(0).append(menuItem);
+        var hideMenu = !!overrideSettings.hideMenu || HIDE_MENU;
 
-        menuItem.on('hover:enter', function () {
-            Lampa.Activity.push({
-                title: CAT_NAME,
-                component: 'category',
-                source: SOURCE_NAME,
-                page: 1
+        if (!hideMenu) {
+            var menuItem = $('<li data-action="lnum" class="menu__item selector"><div class="menu__ico">' + ICON + '</div><div class="menu__text lnum_cat_text">' + CAT_NAME + '</div></li>');
+            $('.menu .menu__list').eq(0).append(menuItem);
+
+            menuItem.on('hover:enter', function () {
+                Lampa.Activity.push({
+                    title: CAT_NAME,
+                    component: 'category',
+                    source: SOURCE_NAME,
+                    page: 1
+                });
             });
-        });
+        }
     }
 
     if (window.appready) {
