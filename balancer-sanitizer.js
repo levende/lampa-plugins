@@ -1,56 +1,56 @@
 (function(){
-    var BLACK_LIST = ["Заблокировано"];
+    var BLACK_LIST = ['Заблокировано', 'TS'];
 
     function startPlugin() {
         if (window.balancer_sanitizer) return;
         window.balancer_sanitizer = true;
 
-        var originalOpen = XMLHttpRequest.prototype.open;
-        var originalSend = XMLHttpRequest.prototype.send;
+        Lampa.Listener.follow('request_secuses', function (event) {
+            if (!event.params || event.params.dataType != 'text') return;
 
-        XMLHttpRequest.prototype.open = function(method, url, async) {
-            this._url = url;
-            return originalOpen.apply(this, arguments);
-        };
+            var response = event.data;
+            if (typeof response !== "string" || response.indexOf('<div') == -1) return;
 
-        XMLHttpRequest.prototype.send = function(body) {
-            var xhr = this;
-            var originalOnReady = xhr.onreadystatechange;
+            var doc = parseHtml(event.data);
+            if (!doc) return;
 
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4 && xhr.status === 200 && typeof xhr.responseText === "string" && xhr.responseText.indexOf('<div') !== -1) {
-                    try {
-                        var parser = new DOMParser();
-                        var doc = parser.parseFromString(xhr.responseText, "text/html");
+            var newData = filterHtml(doc);
+            var originalComplite = event.params.complite;
 
-                        var items = doc.querySelectorAll('.videos__item');
-                        var blackList = window.balancer_sanitizer_black_list || BLACK_LIST;
+            event.params.complite = function() {
+                originalComplite(newData);
+            }
+        });
+    }
 
-                        for (var i = 0; i < items.length; i++) {
-                            var item = items[i];
-                            var text = item.textContent || item.innerText || "";
+    function parseHtml(str) {
+        var parser = new DOMParser();
+        var doc = parser.parseFromString(str, "text/html");
 
-                            for (var j = 0; j < blackList.length; j++) {
-                                if (text.toLowerCase().indexOf(blackList[j].toLowerCase()) !== -1) {
-                                    if (item.parentNode) item.parentNode.removeChild(item);
-                                    break;
-                                }
-                            }
-                        }
+        return doc.querySelector("parsererror") ? null : doc;
+    }
 
-                        try {
-                            Object.defineProperty(xhr, 'responseText', { value: doc.body.innerHTML });
-                        } catch(e) {
-                        }
-                    } catch(e) {
+    function filterHtml(doc) {
+        var items = doc.querySelectorAll('.videos__item');
+
+        for (var i = 0; i < items.length; i++) {
+            var item = items[i];
+            var text = item.textContent || item.innerText || '';
+
+            var blackList = window.balancer_sanitizer_black_list || BLACK_LIST;
+
+            for (var j = 0; j < blackList.length; j++) {
+                if (text.toLowerCase().indexOf(blackList[j].toLowerCase()) !== -1) {
+                    if (item.parentNode) {
+                        item.parentNode.removeChild(item);
                     }
+
+                    break;
                 }
+            }
+        }
 
-                if (originalOnReady) originalOnReady.apply(xhr, arguments);
-            };
-
-            return originalSend.apply(this, arguments);
-        };
+        return doc.body.innerHTML;
     }
 
     if (window.appready) {
