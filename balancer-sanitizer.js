@@ -31,7 +31,7 @@
                             var text = item.textContent || item.innerText || "";
 
                             for (var j = 0; j < blackList.length; j++) {
-                                if (text.indexOf(blackList[j]) !== -1) {
+                                if (text.toLowerCase().indexOf(blackList[j].toLowerCase()) !== -1) {
                                     if (item.parentNode) item.parentNode.removeChild(item);
                                     break;
                                 }
