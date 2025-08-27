@@ -36,4 +36,7 @@ Welcome to the page! This page contains a collection of plugins designed to enha
 ### 9. **Random Scheduled**
 - **[https://levende.github.io/lampa-plugins/random-scheduled.js](https://levende.github.io/lampa-plugins/random-scheduled.js)**
 
+### 10. **TV Status color**
+- **[tv-status-color.js](https://levende.github.io/lampa-plugins/tv-status-color.js)**
+
 *Note: Please ensure you follow the installation instructions carefully and review the plugin description for any important details before use.*
