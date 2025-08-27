@@ -1,5 +1,5 @@
 (function(){
-    var BLACK_LIST = ['Заблокировано', 'TS'];
+    var BLACK_LIST = ['Заблокировано', ' TS'];
 
     function startPlugin() {
         if (window.balancer_sanitizer) return;
