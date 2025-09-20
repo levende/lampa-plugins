@@ -325,8 +325,6 @@
             function getCollectionLines() {
                 var collectionLinesRaw = [];
 
-                debugger;
-
                 if (!DISPLAY_OPTIONS.collections.visible || COLLECTIONS.length === 0) {
                     return [];
                 }
@@ -383,7 +381,7 @@
                 var baseUrl = getBaseUrl(lineType);
                 var lang = Lampa.Storage.get('tmdb_lang', 'ru');
                 var token = getToken(lineType);
-                var page = params.page || 1;
+                var page = 1;
                 var url = baseUrl + '/' + lineId + '?language=' + lang + '&page=' + page + '&api_key=' + Lampa.TMDB.key() + '&lnum_token=' + token + '&session_id=' + SESSION_ID;
 
                 getFromCache(url, params, function (json) {
