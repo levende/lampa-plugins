@@ -13,7 +13,7 @@
     if(!window.location.origin){window.location.origin=window.location.protocol+"//"+window.location.hostname+(window.location.port ? ":"+window.location.port : "");}
 
     var pluginManifest = {
-        version: '2.5.1',
+        version: '3.0.0',
         author: 'levende',
         docs: 'https://levende.github.io/lampa-plugins/docs/profiles',
         contact: 'https://t.me/levende',
@@ -604,6 +604,14 @@
 
             var profilesSvc = new ProfilesService(stateSvc, wsSvc, new ProfileManager(stateSvc, wsSvc));
             profilesSvc.init();
+
+            if (!Lampa.ParentalControl) {
+                Lampa.ParentalControl = {
+                    query: function (success, error) {
+                        if (typeof success === 'function') success();
+                    }
+                };
+            }
         }
     }
 
@@ -616,7 +624,7 @@
             var profileButton = $('<div class="head__action selector open--profile"><img id="user_profile_icon" src="' + currentProfile.icon + '"/></div>');
             $('.open--profile').before(profileButton).remove();
 
-            profileButton.on('hover:enter hover:click hover:touch', function () {
+            var showProfileSelect = function () {
                 Lampa.Select.show({
                     title: Lampa.Lang.translate('account_profiles'),
                     nomark: false,
@@ -677,6 +685,16 @@
                         Lampa.Controller.toggle('content');
                     },
                 });
+            };
+
+            profileButton.on('hover:enter hover:click hover:touch', function() {
+                var parentControlScopes = Lampa.Storage.get('parental_control_personal', []);
+
+                if (parentControlScopes.indexOf('account_profiles') !== -1) {
+                    Lampa.ParentalControl.query(showProfileSelect);
+                } else {
+                    showProfileSelect()
+                }
             });
         };
 
