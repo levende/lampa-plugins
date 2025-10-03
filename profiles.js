@@ -23,7 +23,7 @@
         host: window.location.origin,
         profiles: [],
         defaultProfileIcon: 'https://levende.github.io/lampa-plugins/assets/profile_icon.png',
-        showSettings: true,
+        showSettings: false,
         syncEnabled: true,
         broadcastEnabled: true,
         broadcastScanAll: false
@@ -598,6 +598,14 @@
 
             var profilesSvc = new ProfilesService(stateSvc, wsSvc, new ProfileManager(stateSvc, wsSvc));
             profilesSvc.init();
+
+            if (!Lampa.ParentalControl) {
+                Lampa.ParentalControl = {
+                    query: function (success, error) {
+                        if (typeof success === 'function') success();
+                    }
+                };
+            }
         }
     }
 
@@ -610,7 +618,7 @@
             var profileButton = $('<div class="head__action selector open--profile"><img id="user_profile_icon" src="' + currentProfile.icon + '"/></div>');
             $('.open--profile').before(profileButton).remove();
 
-            profileButton.on('hover:enter hover:click hover:touch', function () {
+            var showProfileSelect = function () {
                 Lampa.Select.show({
                     title: Lampa.Lang.translate('account_profiles'),
                     nomark: false,
@@ -670,6 +678,16 @@
                         Lampa.Controller.toggle('content');
                     },
                 });
+            }
+
+            profileButton.on('hover:enter hover:click hover:touch', function() {
+                var parentControlScopes = Lampa.Storage.get('parental_control_personal', []);
+
+                if (parentControlScopes.indexOf('account_profiles') !== -1) {
+                    Lampa.ParentalControl.query(showProfileSelect);
+                } else {
+                    showProfileSelect()
+                }
             });
         };
 
