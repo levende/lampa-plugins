@@ -687,7 +687,7 @@
                     var controllerName = Lampa.Controller.enabled().name;
                     Lampa.ParentalControl.query(
                         showProfileSelect,
-                        Lampa.Controller.toggle(controllerName));
+                        function() { Lampa.Controller.toggle(controllerName) });
                 } else {
                     showProfileSelect()
                 }
