@@ -680,11 +680,14 @@
                 });
             }
 
-            profileButton.on('hover:enter hover:click hover:touch', function() {
+            profileButton.on('hover:enter hover:click hover:touch', function () {
                 var parentControlScopes = Lampa.Storage.get('parental_control_personal', []);
 
                 if (parentControlScopes.indexOf('account_profiles') !== -1) {
-                    Lampa.ParentalControl.query(showProfileSelect);
+                    var controllerName = Lampa.Controller.enabled().name;
+                    Lampa.ParentalControl.query(
+                        showProfileSelect,
+                        Lampa.Controller.toggle(controllerName));
                 } else {
                     showProfileSelect()
                 }
