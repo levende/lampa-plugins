@@ -503,8 +503,9 @@
             });
 
             $('.head__action.open--search').after($broadcastBtn);
-
-            if (!ws.connected || Lampa.Activity.active().component !== 'full') {
+            
+            var currentActive = Lampa.Activity.active();
+            if (!ws.connected || !currentActive || currentActive.component !== 'full') {
                 $broadcastBtn.hide();
             }
 
