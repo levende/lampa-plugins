@@ -515,7 +515,8 @@
             }
 
             Lampa.Listener.follow('lws_connect', function (event) {
-                if (event.connected && Lampa.Activity.active().component === 'full') {
+                var active = Lampa.Activity.active();
+                if (event.connected && !!active && active.component === 'full') {
                     $broadcastBtn.show();
                 }
             });
