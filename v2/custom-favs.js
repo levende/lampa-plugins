@@ -624,8 +624,7 @@
                         filtered.push(favCard);
                     }
                 }
-
-                favorite.customTypes.card = filtered;
+                
                 return filtered;
             }
 

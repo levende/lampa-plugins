@@ -660,7 +660,6 @@
                     }
                 }
 
-                favorite.customTypes.card = filtered;
                 return filtered;
             }
 
