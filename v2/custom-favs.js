@@ -101,7 +101,7 @@
             var defaultCustomCardsValue = allCustomFavs.length === 0 || !!customTypes.card
                 ? []
                 : favorite.card.filter(function(card) {
-                    return allCustomFavs.indexOf(card.id) !== -1;
+                    return allCustomFavs.indexOf(card.id) !== -1
                 });
 
             favorite.customTypes.card = customTypes.card || defaultCustomCardsValue;
@@ -580,60 +580,25 @@
 
         window.custom_favorites = true;
 
-        var cardModule = Lampa.Maker.map('Card');
-        var onFavoriteUpdate = cardModule.Favorite.onUpdate;
-        
-        cardModule.Favorite.onUpdate = function() {
-            var self = this;
-            onFavoriteUpdate.apply(self);
-            cardFavoriteSvc.refreshCustomFavoriteIcon({
-                data: self.data,
-                card: self.html
+        Lampa.Utils.putScript(['https://levende.github.io/lampa-plugins/listener-extensions.js'], function () {
+            Lampa.Listener.follow('card', function (event) {
+                if (event.type !== 'build') {
+                    return;
+                }
+
+                var originalFavorite = event.object.favorite;
+                event.object.favorite = function () {
+                    originalFavorite.apply(this, arguments);
+                    cardFavoriteSvc.refreshCustomFavoriteIcon(event.object);
+                }
+
+                var originalOnMenu = event.object.onMenu;
+                event.object.onMenu = function () {
+                    originalOnMenu.apply(this, arguments);
+                    cardFavoriteSvc.extendContextMenu(event.object);
+                }
             });
-        }
-
-        var onMenuCreate = cardModule.Menu.onCreate;
-        cardModule.Menu.onCreate = function () {
-            var self = this;
-            var favoriteMenuList = this.menu_list.filter(function (menu) {
-                return menu.title === Lampa.Lang.translate('settings_input_links');
-            })[0];
-
-            var favoriteMenu = favoriteMenuList.menu;
-
-            favoriteMenuList.menu = function() {
-                var newItems = customFavorite.getTypes().map(function(typeName) {
-                    var isChecked = customFavorite.getTypeList(typeName).indexOf(self.data.id) >= 0;
-                    return {
-                        checkbox: true,
-                        checked: isChecked ? self.data.id : undefined,
-                        onCheck: function() {
-                            customFavorite.toggleCard(typeName, self.data);
-                            Lampa.Maker.map('Card').Favorite.onUpdate.apply(self);
-                        },
-                        title: typeName
-                    };
-                })
-
-                var oldMenuItems = favoriteMenu.apply(favoriteMenuList).map(function(menuItem) {
-                    if (!menuItem.onCheck) {
-                        return menuItem;
-                    }
-
-                    var onCheck = menuItem.onCheck;
-                    menuItem.onCheck = function() {
-                        onCheck.apply(this, arguments);
-                        Lampa.Maker.map('Card').Favorite.onUpdate.apply(self);
-                    }
-
-                    return menuItem;
-                });
-
-                return newItems.concat(oldMenuItems);
-            }
-
-            onMenuCreate.apply(this, arguments);
-        }
+        });
 
         var favoriteGet = Lampa.Favorite.get;
 
@@ -714,7 +679,7 @@
                 favoritePageSvc.renderAddButton();
                 var favorite = customFavorite.getFavorite();
 
-                //favoritePageSvc.renderLines();
+                favoritePageSvc.renderLines();
 
                 customFavorite.getTypesWithoutSystem(favorite).reverse().forEach(function (typeName) {
                     var typeUid = favorite.customTypes[typeName];

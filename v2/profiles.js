@@ -13,7 +13,7 @@
     if(!window.location.origin){window.location.origin=window.location.protocol+"//"+window.location.hostname+(window.location.port ? ":"+window.location.port : "");}
 
     var pluginManifest = {
-        version: '3.0.0',
+        version: '2.5.1',
         author: 'levende',
         docs: 'https://levende.github.io/lampa-plugins/docs/profiles',
         contact: 'https://t.me/levende',
@@ -166,14 +166,9 @@
         };
     }
 
-    function FavoriteService() {
-        this.update = function() {
-            Lampa.Favorite.init();
-            Lampa.Favorite.read();
-        }
-    }
-
     function ApiService() {
+        var network = new Lampa.Reguest();
+
         function addAuthParams(url) {
             url = url + '';
             if (url.indexOf('account_email=') == -1) {
@@ -188,7 +183,7 @@
         }
 
         this.send = function (url, callback, errCallback) {
-            Lampa.Network.silent(addAuthParams(url), callback, errCallback)
+            network.silent(addAuthParams(url), callback, errCallback)
         }
     }
 
@@ -220,7 +215,6 @@
     var waiter = new Waiter();
     var apiSvc = new ApiService();
     var notifySvc = new NotifyService();
-    var favoriteSvc = new FavoriteService();
 
     function WebSocketService() {
         var self = this;
@@ -675,8 +669,7 @@
                                         page.outdated = true;
                                     });
 
-                                    favoriteSvc.update();
-
+                                    Lampa.Favorite.init();
                                     self.softRefresh();
                                 });
                         }
@@ -685,7 +678,7 @@
                         Lampa.Controller.toggle('content');
                     },
                 });
-            };
+            }
 
             profileButton.on('hover:enter hover:click hover:touch', function () {
                 var parentControlScopes = Lampa.Storage.get('parental_control_personal', []);
@@ -769,7 +762,7 @@
                 }
             });
 
-            favoriteSvc.update();
+            Lampa.Favorite.init();
             logger.debug('Profile data has been restored for profile', profile);
         }
 
@@ -789,7 +782,7 @@
         function reset() {
             state.sync.keys.forEach(localStorage.removeItem.bind(localStorage));
             Lampa.Storage.set('favorite', {});
-            favoriteSvc.update();
+            Lampa.Favorite.init();
 
             state.sync.timestamps.forEach(function (timestamp) {
                 Lampa.Storage.set(timestamp, 0);
