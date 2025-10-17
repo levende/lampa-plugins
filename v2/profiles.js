@@ -699,7 +699,7 @@
         function switchOnlineProfile(currentProfile, newProfile, refresh) {
             reset();
 
-            if (!ws.connected) {
+            if (!ws.connected || window.__lampacBookmarkSyncInitialized) {
                 window.location.reload();
             }
 
