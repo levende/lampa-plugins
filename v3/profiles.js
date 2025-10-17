@@ -836,33 +836,28 @@
         }
 
         function compareVersions(v1, v2) {
-            var a = v1.split('.').map(function(x) { return parseInt(x, 10); });
-            var b = v2.split('.').map(function(x) { return parseInt(x, 10); });
+            var a = v1.split('.').map(x => parseInt(x, 10));
+            var b = v2.split('.').map(x => parseInt(x, 10));
             var len = Math.max(a.length, b.length);
 
             for (var i = 0; i < len; i++) {
                 var diff = (a[i] || 0) - (b[i] || 0);
-                if (diff !== 0) return diff > 0;
+                if (diff !== 0) return diff > 0 ? 1 : -1;
             }
-
-            return true; 
+            return 0;
         }
 
         function testBackendAccess(callback) {
             apiSvc.send(
                 state.host + '/version',
                 function(version) {
-                    if (compareVersions(String(version), '148.12')) {
-                        throw new Error('invalid lampac version: ' + version);
-                    }
-
                     apiSvc.send(
                         state.host + '/testaccsdb',
-                        function (response) { callback(!!response && response.accsdb == false); },
-                        function () { callback(false); }
+                        function (response) { callback(!!response && response.accsdb == false, version); },
+                        function () { callback(false, 0); }
                     );
                 },
-                function () { callback(false); }
+                function () { callback(false, 0); }
             );
         }
 
@@ -967,6 +962,11 @@
             configureListeners();
 
             testBackendAccess(function (online) {
+                if (compareVersions(String(version), '148.12') >= 0 && compareVersions(String(version), '148.14') <= 0) {
+                    Lampa.Noty.show('Invalid Lampac version: ' + version + '. Please update to 148.15 or higher.');
+                    return;
+                }
+
                 getProfiles(function (profiles) {
                     state.profiles = profiles;
 
