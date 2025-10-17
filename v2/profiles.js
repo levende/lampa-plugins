@@ -13,7 +13,7 @@
     if(!window.location.origin){window.location.origin=window.location.protocol+"//"+window.location.hostname+(window.location.port ? ":"+window.location.port : "");}
 
     var pluginManifest = {
-        version: '2.5.2',
+        version: '2.5.3',
         author: 'levende',
         docs: 'https://levende.github.io/lampa-plugins/docs/profiles',
         contact: 'https://t.me/levende',
@@ -828,12 +828,25 @@
             return !!Lampa.Storage.get('account', '{}').token && Lampa.Storage.get('account_use', false);
         }
 
+        function compareVersions(v1, v2) {
+            var a = v1.split('.').map(function(x) { return parseInt(x, 10); });
+            var b = v2.split('.').map(function(x) { return parseInt(x, 10); });
+            var len = Math.max(a.length, b.length);
+
+            for (var i = 0; i < len; i++) {
+                var diff = (a[i] || 0) - (b[i] || 0);
+                if (diff !== 0) return diff > 0;
+            }
+
+            return true; 
+        }
+
         function testBackendAccess(callback) {
             apiSvc.send(
                 state.host + '/version',
                 function(version) {
-                    if (version >= 148.12) {
-                        throw new Error('invalid lampac version');
+                    if (compareVersions(String(version), '148.12')) {
+                        throw new Error('invalid lampac version: ' + version);
                     }
 
                     apiSvc.send(
@@ -1144,10 +1157,10 @@
     }
 
     if (window.appready) {
-        new Plugin().start();
+        setTimeout(function () { new Plugin().start(); }, 500);
     } else {
         Lampa.Listener.follow('app', function() {
-            new Plugin().start();
+            setTimeout(function () { new Plugin().start(); }, 500);
         });
     }
 })();
