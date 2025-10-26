@@ -961,7 +961,7 @@
             window.sync_disable = !state.syncEnabled;
             configureListeners();
 
-            testBackendAccess(function (online) {
+            testBackendAccess(function (online, version) {
                 if (compareVersions(String(version), '148.12') >= 0 && compareVersions(String(version), '148.14') <= 0) {
                     Lampa.Noty.show('Invalid Lampac version: ' + version + '. Please update to 148.15 or higher.');
                     return;
