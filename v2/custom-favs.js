@@ -1,6 +1,12 @@
 (function () {
     'use strict';
 
+    if(!window.location.origin){window.location.origin=window.location.protocol+"//"+window.location.hostname+(window.location.port ? ":"+window.location.port : "");}
+
+    var HOST = window.location.origin;
+    var STORAGE_KEY = "custom_favorite";
+    var STORAGE_SYNC_KEY = "lampac_sync_custom_favorite";
+
     function CustomFavoriteFolder(data) {
         var params = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
         this.data = data;
@@ -87,30 +93,136 @@
     }
 
     function CustomFavorite() {
+        var _customFavorite = null;
         var allCustomFavs = [];
 
-        this.getFavorite = function () {
-            var favorite = Lampa.Storage.get('favorite', {});
-            favorite.card = favorite.card || [];
+        this.migration = function() {
+            this.migrationV1();
+        }
 
-            var customTypes = favorite.customTypes || {};
-            favorite.customTypes = customTypes;
+        this.migrationV1 = function() {
+            var customFavs = this.getFavorite();
+            var customTypes = customFavs.customTypes || {};
+            customFavs.customTypes = customTypes;
 
-            allCustomFavs = this.getCards(favorite);
-
-            var defaultCustomCardsValue = allCustomFavs.length === 0 || !!customTypes.card
-                ? []
-                : favorite.card.filter(function(card) {
-                    return allCustomFavs.indexOf(card.id) !== -1
-                });
-
-            favorite.customTypes.card = customTypes.card || defaultCustomCardsValue;
-
-            if (defaultCustomCardsValue.length > 0) { // migration
-                Lampa.Storage.set('favorite', favorite);
+            if (typeof customTypes.migrationVersion === 'number'
+                && isFinite(customTypes.migrationVersion)
+                && customTypes.migrationVersion > 0) {
+                return;
             }
 
-            return favorite;
+            var fav = Lampa.Storage.get('favorite', {});
+
+            if (isFavoriteEmpty(fav)) {
+                return;
+            }
+            
+            if (!fav.customTypes || !Array.isArray(fav.customTypes.card) || fav.customTypes.card.length == 0) {
+                customFavs.customTypes.migrationVersion = 1;
+                Lampa.Storage.set(STORAGE_KEY, customFavs);
+                return;
+            }
+
+            customTypes.card = mergeCard(customTypes.card || [], fav.customTypes.card);
+
+            var oldTypesDefinitions = this.getTypesWithoutSystem(fav);
+
+            oldTypesDefinitions.forEach(function(typeName) {
+                if (!fav.customTypes.hasOwnProperty(typeName)) return;
+                var typeUid = fav.customTypes[typeName];
+
+                customFavs.customTypes[typeName] = typeUid;
+                customFavs[typeUid] = mergeCategory(customFavs[typeUid] || [], fav[typeUid]);
+
+                //delete fav[typeUid];
+            });
+
+            customFavs.customTypes.migrationVersion = 1;
+            Lampa.Storage.set(STORAGE_KEY, customFavs);
+
+            //delete fav.customTypes;
+            //Lampa.Storage.set('favorite', fav);
+
+            function isFavoriteEmpty(favorite) {
+                var emptyFavorite = true;
+
+                for (var key in favorite) {
+                    if (favorite.hasOwnProperty(key)) {
+                        var value = favorite[key];
+
+                        if (Array.isArray(value)) {
+                            if (value.length !== 0) {
+                                emptyFavorite = false;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                return emptyFavorite;
+            }
+
+            function mergeCard(arr1, arr2) {
+                var merged = [];
+                var ids = {};
+
+                for (var i = 0; i < arr1.length; i++) {
+                    var obj = arr1[i];
+                    ids[obj.id] = obj;
+                }
+
+                for (var j = 0; j < arr2.length; j++) {
+                    var obj2 = arr2[j];
+                    if (ids.hasOwnProperty(obj2.id)) {
+                        var existing = ids[obj2.id];
+                        for (var key in obj2) {
+                            if (obj2.hasOwnProperty(key)) {
+                                existing[key] = obj2[key];
+                            }
+                        }
+                    } else {
+                        ids[obj2.id] = obj2;
+                    }
+                }
+
+                for (var id in ids) {
+                    if (ids.hasOwnProperty(id)) {
+                        merged.push(ids[id]);
+                    }
+                }
+
+                return merged;
+            }
+
+            function mergeCategory(arr1, arr2) {
+                var merged = arr1.concat(arr2);
+                var unique = [];
+                var seen = {};
+
+                for (var i = 0; i < merged.length; i++) {
+                    var item = merged[i];
+                    if (!seen.hasOwnProperty(item)) {
+                        seen[item] = true;
+                        unique.push(item);
+                    }
+                }
+
+                return unique;
+            }
+        }
+
+        this.init = function(obj) {
+            _customFavorite = obj || Lampa.Storage.get(STORAGE_KEY, {});
+            _customFavorite.customTypes = _customFavorite.customTypes || { card: [] };
+        }
+
+        this.getFavorite = function () {
+            if (_customFavorite == null) {
+                this.init();
+                this.migration();
+            }
+
+            return _customFavorite;
         }
 
         this.getTypes = function () {
@@ -128,9 +240,11 @@
         };
 
         this.getTypesWithoutSystem = function(favorite) {
+            var systemFields = [ 'card', 'migrationVersion'];
+
             return Object
                 .keys(favorite.customTypes || {})
-                .filter(function(type) { return type !== 'card' } );
+                .filter(function(type) { return systemFields.indexOf(type) == -1 } );
         }
 
         this.getCards = function (favorite) {
@@ -160,8 +274,7 @@
             favorite.customTypes[typeName] = uid;
             favorite[uid] = [];
 
-            Lampa.Storage.set('favorite', favorite);
-            Lampa.Favorite.init();
+            Lampa.Storage.set(STORAGE_KEY, favorite);
 
             return {
                 name: typeName,
@@ -189,9 +302,7 @@
             favorite.customTypes[newName] = uid;
             delete favorite.customTypes[oldName];
 
-            Lampa.Storage.set('favorite', favorite);
-            Lampa.Favorite.init();
-
+            Lampa.Storage.set(STORAGE_KEY, favorite);
             return true;
         }
 
@@ -208,9 +319,7 @@
             delete favorite.customTypes[typeName];
             delete favorite[uid];
 
-            Lampa.Storage.set('favorite', favorite);
-            Lampa.Favorite.init();
-
+            Lampa.Storage.set(STORAGE_KEY, favorite);
             return true;
         }
 
@@ -250,21 +359,9 @@
                 Lampa.Arrays.insert(typeList, 0, card.id);
                 this.getCards(favorite);
 
-                Lampa.Favorite.listener.send('add', {
-                    card: card,
-                    where: typeName,
-                    typeId: uid
-                });
             } else {
                 Lampa.Arrays.remove(typeList, card.id);
                 var customCards = this.getCards(favorite);
-
-                Lampa.Favorite.listener.send('remove', {
-                    card: card,
-                    method: 'id',
-                    where: typeName,
-                    typeId: uid
-                });
 
                 var used = customCards.indexOf(card.id) >= 0;
 
@@ -272,18 +369,10 @@
                     favorite.customTypes.card = customTypeCards.filter(function (favCard) {
                         return favCard.id !== card.id;
                     });
-
-                    Lampa.Favorite.listener.send('remove', {
-                        card: card,
-                        method: 'card',
-                        where: typeName,
-                        typeId: uid
-                    });
                 }
             }
 
-            Lampa.Storage.set('favorite', favorite);
-            Lampa.Favorite.init();
+            Lampa.Storage.set(STORAGE_KEY, favorite);
 
             return {
                 name: typeName,
@@ -294,6 +383,122 @@
     }
 
     var customFavorite = new CustomFavorite();
+
+    function SyncService() {
+        function account(url) {
+            url = url + '';
+            if (url.indexOf('account_email=') === -1) {
+                var email = Lampa.Storage.get('account_email');
+                if (email) url = Lampa.Utils.addUrlComponent(url, 'account_email=' + encodeURIComponent(email));
+            }
+            if (url.indexOf('uid=') === -1) {
+                var uid = Lampa.Storage.get('lampac_unic_id', '');
+                if (uid) url = Lampa.Utils.addUrlComponent(url, 'uid=' + encodeURIComponent(uid));
+            }
+            return url;
+        }
+
+        function goExport() {
+            if (window.sync_disable) return;
+
+            var value = Lampa.Storage.get(STORAGE_KEY, {});
+            if (!value.hasOwnProperty('customTypes')) return;
+
+            var uri = account(HOST + '/storage/set?path=custom_favs&pathfile=' + Lampa.Storage.get('lampac_profile_id', ''));
+
+            $.ajax({
+                url: uri + '&events=' + encodeURIComponent(Lampa.Base64.encode(JSON.stringify({
+                    connectionId: (window.lwsEvent ? window.lwsEvent.connectionId : ''),
+                    name: 'sync_custom_favorite',
+                    data: Lampa.Storage.get('lampac_profile_id', ''),
+                }))),
+                type: 'POST',
+                data: JSON.stringify(value),
+                async: true,
+                cache: false,
+                contentType: 'application/json',
+                processData: false,
+                success: function (j) {
+                    if (j.success && j.fileInfo) {
+                        Lampa.Storage.set(STORAGE_SYNC_KEY, j.fileInfo.changeTime);
+                    }
+                },
+                error: function () {
+                    console.log('Lampac Storage', 'export', 'error');
+                }
+            });
+        }
+
+        function goImport(callback) {
+            if (window.sync_disable) return;
+
+            var network = new Lampa.Reguest();
+            network.silent(
+                account(HOST + '/storage/get?path=custom_favs&pathfile=' + Lampa.Storage.get('lampac_profile_id', '')),
+                function (j) {
+                    if (j.success && j.fileInfo && j.data) {
+                        if (j.fileInfo.changeTime > Lampa.Storage.get(STORAGE_SYNC_KEY, 0)) {
+                            try {
+                                var data = JSON.parse(j.data);
+                                if (data.hasOwnProperty('customTypes')) {
+                                    Lampa.Storage.set(STORAGE_KEY, data, true);
+                                    Lampa.Storage.set(STORAGE_SYNC_KEY, j.fileInfo.changeTime);
+                                    customFavorite.init(data);
+                                }
+                            } catch (error) {
+                                console.log('Lampac Storage', 'import', error.message);
+                            }
+                        }
+                    } else if (j.msg && j.msg === 'outFile') {
+                        customFavorite.init();
+                        goExport();
+                    }
+
+                    if (typeof callback === 'function') {
+                        callback();
+                    }
+                }
+            );
+        }
+
+        function sync() {
+            if (window.custom_favs_sync_init) return;
+            window.custom_favs_sync_init = true;
+
+            goImport(function () {
+                Lampa.Storage.listener.follow('change', function (event) {
+                    if (event.name === STORAGE_KEY) {
+                        goExport();
+                    }
+                });
+
+                Lampa.Listener.follow('profile', function(event) {
+                    if (event.type === 'changed') {
+                        goImport(function () {});
+                    }
+                });
+
+                document.addEventListener('lwsEvent', function (event) {
+                    if (event.detail.name === 'sync_custom_favorite'
+                        && event.detail.data === Lampa.Storage.get('lampac_profile_id', '')) {
+                            goImport(function () { });
+                    } else if (event.detail.name === 'system'
+                        && event.detail.data === 'reconnected'
+                        && event.detail.src !== 'profiles.js') {
+                            goImport(function () { });
+                    }
+                });
+            });
+        }
+
+        this.start = function() {
+            if (!window.lwsEvent) {
+                Lampa.Utils.putScript([account(HOST + '/invc-ws.js')], function () { }, false, function () {
+                    sync();
+                }, true);
+            } else sync();
+        }
+    }
 
     function FavoritePageService() {
     }
@@ -432,13 +637,12 @@
         var object = Lampa.Activity.active();
         var favorite = customFavorite.getFavorite();
         var mediaTypes = ['movies', 'tv'];
-        var lines = [];
 
         customFavorite.getTypesWithoutSystem(favorite).reverse().forEach(function (typeName) {
             var typeUid = favorite.customTypes[typeName];
             var typeList = favorite[typeUid] || [];
 
-            var typeCards = favorite.card.filter(function (card) { return typeList.indexOf(card.id) !== -1 });
+            var typeCards = favorite.customTypes.card.filter(function (card) { return typeList.indexOf(card.id) !== -1 });
             var lineItems = Lampa.Arrays.clone(typeCards.slice(0, 20));
 
             var i = 0;
@@ -579,6 +783,23 @@
         }
 
         window.custom_favorites = true;
+
+        Lampa.Storage.listener.follow('change', function(event) {
+            if (event.name == 'lampac_sync_favorite' && event.value == 0) {
+                Lampa.Storage.set(STORAGE_KEY, '{}', true);
+                Lampa.Storage.set(STORAGE_SYNC_KEY, 0, true);
+
+                customFavorite.init({});
+                return;
+            }
+            
+            if (event.name == 'favorite' || event.name == 'lampac_sync_favorite') {
+                customFavorite.migration();
+            }
+        });
+
+        HOST = Lampa.Storage.get('custom_favorite_host', '') || HOST;
+        new SyncService().start();
 
         Lampa.Utils.putScript(['https://levende.github.io/lampa-plugins/listener-extensions.js'], function () {
             Lampa.Listener.follow('card', function (event) {
