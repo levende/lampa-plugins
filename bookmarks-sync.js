@@ -68,8 +68,6 @@
         qr.attr('src', cubUrl + '/img/qr/qr_device.svg');
         qr.css('opacity', 1);
 
-        var controller = Lampa.Controller;
-
         html.find('.simple-button').on('hover:enter', function () {
             Lampa.Modal.close();
             Lampa.Input.edit({
@@ -109,12 +107,18 @@
                                         Lampa.Controller.toggle(controller);
                                         Lampa.Loading.start();
 
-                                        network.silent(cubApiUrl + 'bookmarks/all?full=1', function (bookmarksResult) {
+                                        network.silent(cubApiUrl + 'bookmarks/dump', function (bookmarksResult) {
                                             if (bookmarksResult.secuses) {
                                                 var favorite = convertToFavorite(bookmarksResult);
                                                 Lampa.Storage.set('favorite', favorite);
+
+                                                 if (Lampa.Favorite && typeof Lampa.Favorite.init === 'function') {
+                                                    if (Lampa.Favorite.read) Lampa.Favorite.read();
+                                                    else Lampa.Favorite.init();
+                                                }
+
                                                 Lampa.Loading.stop();
-                                                Lampa.Noty.show('Successfully synchronized');
+                                                Lampa.Noty.show(Lampa.Lang.translate('bookmarks_sync_success'));
                                             } else {
                                                 Lampa.Loading.stop();
                                                 Lampa.Noty.show('error');
@@ -138,7 +142,7 @@
                             }
                         }, function () {
                             Lampa.Loading.stop();
-                            Lampa.Noty.show(Lang.translate('account_profiles_empty'));
+                            Lampa.Noty.show(Lampa.Lang.translate('account_profiles_empty'));
                         }, false, {
                             headers: {
                                 token: resultDeviceAdd.token
@@ -186,6 +190,11 @@
                 en: 'Synchronization of CUB bookmarks and history',
                 ru: 'Синхронизация закладок и истории CUB',
                 uk: 'Синхронізація закладок і історії CUB'
+            },
+            bookmarks_sync_success: {
+                en: 'Synchronization completed successfully',
+                ru: 'Синхронизация успешно завершена',
+                uk: 'Синхронізацію успішно завершено'
             }
         });
 
