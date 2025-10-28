@@ -472,20 +472,20 @@
                     }
                 });
 
-                Lampa.Listener.follow('profile', function(event) {
-                    if (event.type === 'changed') {
-                        goImport(function () {});
-                    }
-                });
-
                 document.addEventListener('lwsEvent', function (event) {
-                    if (event.detail.name === 'sync_custom_favorite'
-                        && event.detail.data === Lampa.Storage.get('lampac_profile_id', '')) {
-                            goImport(function () { });
-                    } else if (event.detail.name === 'system'
-                        && event.detail.data === 'reconnected'
-                        && event.detail.src !== 'profiles.js') {
-                            goImport(function () { });
+                    var profileId = Lampa.Storage.get('lampac_profile_id', '');
+                    var eventName = event.detail.name;
+                    var eventData = event.detail.data;
+                    var eventSource = event.detail.src;
+
+                    if ((eventName === 'sync_custom_favorite' || eventName === 'profile_synced') && eventData === profileId) {
+                        goImport(function () {
+                            if (eventSource === 'profiles.js') {
+                                customFavorite.migration();
+                            }
+                        });
+                    } else if (eventName === 'system' && eventData === 'reconnected' && eventSource !== 'profiles.js') {
+                        goImport(function () {});
                     }
                 });
             });
@@ -790,11 +790,6 @@
                 Lampa.Storage.set(STORAGE_SYNC_KEY, 0, true);
 
                 customFavorite.init({});
-                return;
-            }
-            
-            if (event.name == 'favorite' || event.name == 'lampac_sync_favorite') {
-                customFavorite.migration();
             }
         });
 

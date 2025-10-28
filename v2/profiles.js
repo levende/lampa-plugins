@@ -708,7 +708,7 @@
                 window.sync_disable = false;
 
                 var event = new CustomEvent('lwsEvent', {
-                    detail: { name: 'system', data: ws.connectionEventTypes.RECONNECTED, src: ws.pluginSrc },
+                    detail: { name: 'system', data: ws.connectionEventTypes.RECONNECTED, src: ws.pluginSrc }
                 });
 
                 document.dispatchEvent(event);
@@ -728,6 +728,12 @@
                     if (!synced) {
                         window.location.reload();
                     }
+
+                    var syncedEvent = new CustomEvent('lwsEvent', {
+                        detail: { name: 'profile_synced', data: newProfile.id, src: ws.pluginSrc }
+                    });
+
+                    document.dispatchEvent(syncedEvent);
 
                     refresh();
                 }
