@@ -13,7 +13,7 @@
     if(!window.location.origin){window.location.origin=window.location.protocol+"//"+window.location.hostname+(window.location.port ? ":"+window.location.port : "");}
 
     var pluginManifest = {
-        version: '3.1.2',
+        version: '3.1.3',
         author: 'levende',
         docs: 'https://levende.github.io/lampa-plugins/docs/profiles',
         contact: 'https://t.me/levende',
@@ -32,33 +32,6 @@
     var originalOpen = XMLHttpRequest.prototype.open;
     var originalSend = XMLHttpRequest.prototype.send;
 
-    function getPathNameFromUrl(url) {
-        var fragmentIndex = url.indexOf('#');
-        if (fragmentIndex !== -1) {
-            url = url.substring(0, fragmentIndex);
-        }
-
-        var queryIndex = url.indexOf('?');
-        if (queryIndex !== -1) {
-            url = url.substring(0, queryIndex);
-        }
-
-        if (url.indexOf('://') !== -1) {
-            var protocolEnd = url.indexOf('://') + 3;
-            var pathStart = url.indexOf('/', protocolEnd);
-            if (pathStart === -1) {
-                return '/';
-            }
-            return url.substring(pathStart);
-        }
-
-        if (url.charAt(0) !== '/') {
-            return '/' + url;
-        }
-
-        return url;
-    }
-
     XMLHttpRequest.prototype.open = function (method, url) {
         this._method = method;
         this._url = url;
@@ -70,15 +43,13 @@
         var originalOnReadyStateChange = xhr.onreadystatechange;
 
         xhr.onreadystatechange = function () {
-            if (xhr.readyState === 4) {
-                var method = xhr._method;
-                var url = xhr._url;
+            var method = xhr._method;
+            var url = xhr._url;
 
-                if (method === 'GET' && getPathNameFromUrl(url) === '/bookmark/list') {
-                    setTimeout(function () {
-                        Lampa.Storage.set('lampac_sync_favorite', 666);
-                    }, 350);
-                }
+            if (method === 'GET' && url.indexOf('/bookmark/list') !== -1) {
+                setTimeout(function () {
+                    Lampa.Storage.set('lampac_sync_favorite', 666);
+                }, 350);
             }
 
             if (originalOnReadyStateChange) {
@@ -228,8 +199,8 @@
 
     function FavoriteService() {
         this.update = function() {
-            Lampa.Favorite.init();
-            Lampa.Favorite.read();
+            if (Lampa.Favorite.read) Lampa.Favorite.read(true);
+            else Lampa.Favorite.init();
         }
     }
 
@@ -738,7 +709,6 @@
                                     });
 
                                     favoriteSvc.update();
-
                                     self.softRefresh();
                                 });
                         }
