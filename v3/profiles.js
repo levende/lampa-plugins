@@ -13,7 +13,7 @@
     if(!window.location.origin){window.location.origin=window.location.protocol+"//"+window.location.hostname+(window.location.port ? ":"+window.location.port : "");}
 
     var pluginManifest = {
-        version: '3.1.1',
+        version: '3.1.2',
         author: 'levende',
         docs: 'https://levende.github.io/lampa-plugins/docs/profiles',
         contact: 'https://t.me/levende',
@@ -77,7 +77,7 @@
                 if (method === 'GET' && getPathNameFromUrl(url) === '/bookmark/list') {
                     setTimeout(function () {
                         Lampa.Storage.set('lampac_sync_favorite', 666);
-                    }, 200);
+                    }, 350);
                 }
             }
 
@@ -781,7 +781,7 @@
                 document.dispatchEvent(event);
                 Lampa.Listener.send('lampac', {name: "bookmark_pullFromServer" });
 
-            }, 200);
+            }, 50);
 
             waiter.wait({
                 interval: state.sync.time.interval,
