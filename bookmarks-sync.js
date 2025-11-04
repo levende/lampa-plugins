@@ -1,10 +1,55 @@
 (function () {
     'use strict';
+    
+    if(!window.location.origin){window.location.origin=window.location.protocol+"//"+window.location.hostname+(window.location.port ? ":"+window.location.port : "");}
 
-    var network = new Lampa.Reguest();
+    var host = window.location.origin;
+
+    var network =  Lampa.Network || new Lampa.Reguest();
 
     var cubUrl = 'https://' + Lampa.Storage.get('cub_domain', 'cub.red');
     var cubApiUrl = cubUrl + '/api/';
+
+    function buildUrl(path) {
+        var url = host + '/bookmark' + path;
+        var email = Lampa.Storage.get('account_email');
+        if (email) url = Lampa.Utils.addUrlComponent(url, 'account_email=' + encodeURIComponent(email));
+        var uid = Lampa.Storage.get('lampac_unic_id', '');
+        if (uid) url = Lampa.Utils.addUrlComponent(url, 'uid=' + encodeURIComponent(uid));
+        var profile_id = Lampa.Storage.get('lampac_profile_id', '');
+        if (profile_id != '') url = Lampa.Utils.addUrlComponent(url, 'profile_id=' + profile_id);
+        if (window.lwsEvent && window.lwsEvent.connectionId != '') url = Lampa.Utils.addUrlComponent(url, 'connectionId=' + encodeURIComponent(window.lwsEvent.connectionId));
+        return url;
+    }
+
+    function getBookmarksRequestBody() {
+        var fav = Lampa.Favorite.all();
+
+        var allBookmarks = Object.keys(fav)
+            .filter(function (key) {
+                return Array.isArray(fav[key]) && fav[key].length > 0;
+            })
+            .map(function (key) {
+                return fav[key].map(function (card) {
+                    return {
+                        card: card,
+                        card_id: card.id,
+                        id: card.id,
+                        method: 'card',
+                        where: key
+                    };
+                }).reverse();
+            });
+
+        var result = [];
+        for (var i = 0; i < allBookmarks.length; i++) {
+            for (var j = 0; j < allBookmarks[i].length; j++) {
+                result.push(allBookmarks[i][j]);
+            }
+        }
+
+        return result;
+    }
 
     function convertToFavorite(cubBookmarksResponse) {
         var cubFavorites = {
@@ -61,6 +106,11 @@
         return cubFavorites;
     }
 
+    function readFavorite() {
+        if (Lampa.Favorite.read) Lampa.Favorite.read();
+        else Lampa.Favorite.init();
+    }
+
     function syncFavorite() {
         var html = Lampa.Template.get('account_add_device');
 
@@ -110,15 +160,44 @@
                                         network.silent(cubApiUrl + 'bookmarks/dump', function (bookmarksResult) {
                                             if (bookmarksResult.secuses) {
                                                 var favorite = convertToFavorite(bookmarksResult);
-                                                Lampa.Storage.set('favorite', favorite);
 
-                                                 if (Lampa.Favorite && typeof Lampa.Favorite.init === 'function') {
-                                                    if (Lampa.Favorite.read) Lampa.Favorite.read();
-                                                    else Lampa.Favorite.init();
+                                                if (window.lampacBookmarkSyncInitialized) {
+                                                    network.silent(
+                                                        buildUrl('/remove'),
+                                                        function () {
+                                                            Lampa.Storage.set('favorite', favorite);
+                                                            readFavorite();
+
+                                                            network.silent(
+                                                                buildUrl('/add'),
+                                                                function () {
+                                                                    Lampa.Loading.stop();
+                                                                    Lampa.Noty.show(Lampa.Lang.translate('bookmarks_sync_success'));
+                                                                },
+                                                                function (error) {
+                                                                    Lampa.Loading.stop();
+                                                                    Lampa.Noty.show('error');
+                                                                    console.log(error);
+                                                                },
+                                                                JSON.stringify(getBookmarksRequestBody()),
+                                                                { headers: { 'Content-Type': 'application/json' } }
+                                                            );
+                                                        },
+                                                        function (error) {
+                                                            Lampa.Loading.stop();
+                                                            Lampa.Noty.show('error');
+                                                            console.log(error); console.log(error);
+                                                        },
+                                                        JSON.stringify(getBookmarksRequestBody()),
+                                                        { headers: { 'Content-Type': 'application/json' } }
+                                                    );
+                                                } else {
+                                                    Lampa.Storage.set('favorite', favorite);
+                                                    readFavorite();
+
+                                                    Lampa.Loading.stop();
+                                                    Lampa.Noty.show(Lampa.Lang.translate('bookmarks_sync_success'));
                                                 }
-
-                                                Lampa.Loading.stop();
-                                                Lampa.Noty.show(Lampa.Lang.translate('bookmarks_sync_success'));
                                             } else {
                                                 Lampa.Loading.stop();
                                                 Lampa.Noty.show('error');
@@ -156,7 +235,7 @@
                     });
 
                 } else {
-                    displayModal();
+                    Lampa.Loading.stop();
                     Lampa.Noty.show(Lampa.Lang.translate('account_code_wrong'));
                 }
             });
@@ -179,6 +258,11 @@
         }
 
         window.bookmarks_sync = true;
+
+        host = Lampa.Storage.get('bookmarks_sync_host', '') || host;
+        if (host.charAt(host.length - 1) === '/') {
+            host = host.substring(0, host.length - 1);
+        }
 
         Lampa.Lang.add({
             bookmarks_sync_title: {
