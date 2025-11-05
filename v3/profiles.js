@@ -205,6 +205,8 @@
     }
 
     function ApiService() {
+        var network = Lampa.Network || new Lampa.Reguest();
+
         function addAuthParams(url) {
             url = url + '';
             if (url.indexOf('account_email=') == -1) {
@@ -219,7 +221,7 @@
         }
 
         this.send = function (url, callback, errCallback) {
-            Lampa.Network.silent(addAuthParams(url), callback, errCallback)
+            network.silent(addAuthParams(url), callback, errCallback)
         }
     }
 
