@@ -13,7 +13,7 @@
     if(!window.location.origin){window.location.origin=window.location.protocol+"//"+window.location.hostname+(window.location.port ? ":"+window.location.port : "");}
 
     var pluginManifest = {
-        version: '3.1.4',
+        version: '3.1.5',
         author: 'levende',
         docs: 'https://levende.github.io/lampa-plugins/docs/profiles',
         contact: 'https://t.me/levende',
@@ -197,15 +197,8 @@
         };
     }
 
-    function FavoriteService() {
-        this.update = function() {
-            if (Lampa.Favorite.read) Lampa.Favorite.read(true);
-            else Lampa.Favorite.init();
-        }
-    }
-
     function ApiService() {
-        var network = Lampa.Network || new Lampa.Reguest();
+        var network = new Lampa.Reguest();
 
         function addAuthParams(url) {
             url = url + '';
@@ -253,7 +246,6 @@
     var waiter = new Waiter();
     var apiSvc = new ApiService();
     var notifySvc = new NotifyService();
-    var favoriteSvc = new FavoriteService();
 
     function WebSocketService() {
         var self = this;
@@ -706,12 +698,7 @@
                                         return;
                                     }
 
-                                    Lampa.Activity.all().forEach(function (page) {
-                                        page.outdated = true;
-                                    });
-
-                                    favoriteSvc.update();
-                                    self.softRefresh();
+                                    Lampa.Favorite.read();
                                 });
                         }
                     },
@@ -831,7 +818,7 @@
         function reset() {
             state.sync.keys.forEach(localStorage.removeItem.bind(localStorage));
             Lampa.Storage.set('favorite', {});
-            favoriteSvc.update();
+            Lampa.Favorite.read(true);
 
             state.sync.timestamps.forEach(function (timestamp) {
                 Lampa.Storage.set(timestamp, 0);
@@ -849,12 +836,6 @@
             Lampa.Storage.listener.follow('change', function (event) {
                 if (['account', 'account_use', 'lampac_unic_id'].indexOf(event.name) !== -1) {
                     location.reload();
-                }
-            });
-
-            Lampa.Listener.follow('activity', function (event) {
-                if (configured && event.type === 'archive' && event.object.outdated && state.isRefreshType('soft')) {
-                    manager.softRefresh();
                 }
             });
 
