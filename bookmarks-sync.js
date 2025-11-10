@@ -7,7 +7,8 @@
 
     var network =  Lampa.Network || new Lampa.Reguest();
 
-    var cubUrl = 'https://' + Lampa.Storage.get('cub_domain', 'cub.red');
+    var cubHost = Lampa.Storage.get('cub_domain', '') || (!!Lampa.Manifest ? Lampa.Manifest.cub_domain : '') || 'cub.red';
+    var cubUrl = 'https://' + cubHost;
     var cubApiUrl = cubUrl + '/api/';
 
     function buildUrl(path) {
