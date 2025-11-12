@@ -785,6 +785,18 @@
 
         window.custom_favorites = true;
 
+        var originalProfileWaiter = window.__profile_extra_waiter;
+
+        window.__profile_extra_waiter = function() {
+            var synced = Lampa.Storage.get(STORAGE_SYNC_KEY, 0) !== 0;
+
+            if (typeof originalProfileWaiter === 'function') {
+                synced = synced && !!originalProfileWaiter();
+            }
+
+            return synced;
+        }
+
         Lampa.Storage.listener.follow('change', function (event) {
             if (event.name == 'lampac_sync_favorite' && event.value == 0) {
                 Lampa.Storage.set(STORAGE_KEY, '{}', true);

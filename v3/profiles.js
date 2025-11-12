@@ -12,8 +12,10 @@
     if(!document.createEvent)document.createEvent=function(t){var e=document.createEventObject();e.type=t;e.bubbles=false;e.cancelable=false;return e;};
     if(!window.location.origin){window.location.origin=window.location.protocol+"//"+window.location.hostname+(window.location.port ? ":"+window.location.port : "");}
 
+    window.__profile_extra_waiter = function() { return true; };
+
     var pluginManifest = {
-        version: '3.1.5',
+        version: '3.1.6',
         author: 'levende',
         docs: 'https://levende.github.io/lampa-plugins/docs/profiles',
         contact: 'https://t.me/levende',
@@ -746,9 +748,15 @@
                 interval: state.sync.time.interval,
                 timeout: state.sync.time.timeout,
                 conditionFn: function () {
-                    return state.sync.timestamps.every(function (timestampField) {
+                    var synced = state.sync.timestamps.every(function (timestampField) {
                         return !!Lampa.Storage.get(timestampField, 0);
                     });
+
+                    if (typeof window.__profile_extra_waiter === 'function') {
+                        synced = synced && !!window.__profile_extra_waiter();
+                    }
+
+                    return synced;
                 },
                 callback: function (synced) {
                     Lampa.Loading.stop();
