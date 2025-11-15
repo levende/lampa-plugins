@@ -699,6 +699,10 @@
                                         window.location.reload();
                                         return;
                                     }
+                                    Lampa.Listener.send('state:changed', {
+                                        target: 'favorite',
+                                        reason: 'profile'
+                                    });
 
                                     Lampa.Favorite.read();
                                 });
