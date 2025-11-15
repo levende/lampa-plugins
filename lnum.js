@@ -231,18 +231,12 @@
                 });
             }
 
-            if (DISPLAY_OPTIONS.episodes.visible) {
-                partsData.push(function (callback) {
-                    callback({
-                        source: 'tmdb',
-                        results: Lampa.TimeTable.lately().slice(0, 20),
-                        title: DISPLAY_OPTIONS.episodes.title,
-                        nomore: true,
-                        cardClass: function (elem, params) {
-                            return new Episode(elem, params);
-                        }
-                    });
-                });
+            if (DISPLAY_OPTIONS.episodes.visible) {  
+                var addEpisodes = Lampa.Manifest.app_digital >= 300
+                    ? addEpisodesV3
+                    : addEpisodesV2;
+
+                addEpisodes(partsData);
             }
 
             if (DISPLAY_OPTIONS.movies.visible) {
@@ -371,6 +365,53 @@
                 }
 
                 return finalLines;
+            }
+
+            function addEpisodesV2(partsData) {
+                partsData.push(function (callback) {
+                    callback({
+                        source: 'tmdb',
+                        results: Lampa.TimeTable.lately().slice(0, 20),
+                        title: DISPLAY_OPTIONS.episodes.title,
+                        nomore: true,
+                        cardClass: function (elem, params) {
+                            return new Episode(elem, params);
+                        }
+                    });
+                });
+            }
+
+            function addEpisodesV3(partsData) {
+                partsData.push(function (callback) {  
+                    var results = Lampa.TimeTable.lately().slice(0, 20);  
+                    
+                    results.forEach(function(item) {  
+                        item.params = {  
+                            createInstance: function(data) {  
+                                return Lampa.Maker.make('Episode', data, function(module) {  
+                                    return module.only('Card', 'Callback');  
+                                });  
+                            },  
+                            emit: {  
+                                onlyEnter: function() {  
+                                    Lampa.Router.call('full', item.card);  
+                                },  
+                                onlyFocus: function() {  
+                                    Lampa.Background.change(Lampa.Utils.cardImgBackgroundBlur(item.card));  
+                                }  
+                            }  
+                        };  
+                        
+                        Lampa.Arrays.extend(item, item.episode);  
+                    });  
+                    
+                    callback({  
+                        source: 'tmdb',  
+                        results: results,  
+                        title: DISPLAY_OPTIONS.episodes.title,  
+                        nomore: true  
+                    });  
+                });
             }
 
             function makeRequest(lineType, lineId, title, callback, wide) {
