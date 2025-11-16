@@ -744,7 +744,8 @@
                 });
 
                 document.dispatchEvent(event);
-                Lampa.Listener.send('lampac', {name: "bookmark_pullFromServer" });
+                Lampa.Listener.send('lampac', { name: "timecode_pullFromServer" });
+                Lampa.Listener.send('lampac', { name: "bookmark_pullFromServer" });
 
             }, 50);
 
