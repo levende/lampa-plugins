@@ -693,18 +693,16 @@
                                 currentProfile,
                                 item.profile,
                                 function () {
-                                    Lampa.Loading.stop();
+                                    setTimeout(function () {
+                                        Lampa.Loading.stop();
 
-                                    if (state.isRefreshType('full')) {
-                                        window.location.reload();
-                                        return;
-                                    }
-                                    Lampa.Listener.send('state:changed', {
-                                        target: 'favorite',
-                                        reason: 'profile'
-                                    });
+                                        if (state.isRefreshType('full')) {
+                                            window.location.reload();
+                                            return;
+                                        }
 
-                                    Lampa.Favorite.read();
+                                        Lampa.Favorite.read();
+                                    }, 100);
                                 });
                         }
                     },
