@@ -15,7 +15,7 @@
     window.__profile_extra_waiter = function() { return true; };
 
     var pluginManifest = {
-        version: '3.1.6',
+        version: '3.1.7',
         author: 'levende',
         docs: 'https://levende.github.io/lampa-plugins/docs/profiles',
         contact: 'https://t.me/levende',
@@ -704,6 +704,8 @@
                                         Lampa.Favorite.read();
                                     }, 100);
                                 });
+                        } else {
+                            Lampa.Controller.toggle('content');
                         }
                     },
                     onBack: function () {

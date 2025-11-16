@@ -353,7 +353,7 @@
 
             if (typeList.indexOf(card.id) === -1) {
                 if (customTypeCards.every(function (favCard) { return favCard.id !== card.id })) {
-                    Lampa.Arrays.insert(customTypeCards, 0, card);
+                    Lampa.Arrays.insert(customTypeCards, 0, sanitizeCard(card));
                 }
 
                 Lampa.Arrays.insert(typeList, 0, card.id);
@@ -379,6 +379,16 @@
                 uid: uid,
                 counter: typeList.length,
             }
+        }
+
+        function sanitizeCard(card) {
+            if (!card) return null;
+            var prepared = card;
+
+            if (Lampa && Lampa.Arrays && Lampa.Utils && Lampa.Utils.clearCard)
+                prepared = Lampa.Utils.clearCard(Lampa.Arrays.clone(card));
+
+            return prepared;
         }
     }
 
