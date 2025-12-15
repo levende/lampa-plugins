@@ -810,8 +810,8 @@
                     Lampa.Storage.set(field, backupValue);
                 }
             });
-
-            favoriteSvc.update();
+            
+            Lampa.Favorite.read();
             logger.debug('Profile data has been restored for profile', profile);
         }
 
