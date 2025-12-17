@@ -134,14 +134,10 @@
                 customFavs.customTypes[typeName] = typeUid;
                 customFavs[typeUid] = mergeCategory(customFavs[typeUid] || [], fav[typeUid]);
 
-                //delete fav[typeUid];
             });
 
             customFavs.customTypes.migrationVersion = 1;
             Lampa.Storage.set(STORAGE_KEY, customFavs);
-
-            //delete fav.customTypes;
-            //Lampa.Storage.set('favorite', fav);
 
             function isFavoriteEmpty(favorite) {
                 var emptyFavorite = true;
@@ -643,48 +639,85 @@
         });
     }
 
-    FavoritePageService.prototype.renderLines = function () {
-        var object = Lampa.Activity.active();
-        var favorite = customFavorite.getFavorite();
-        var mediaTypes = ['movies', 'tv'];
-        var lines = [];
+    FavoritePageService.prototype.registerLines = function () {
+        Lampa.ContentRows.add({
+            index: 1,
+            screen: ['bookmarks'],
+            call: function(params, screen) {
+                var favorite = customFavorite.getFavorite();
+                var mediaTypes = ['movies', 'tv'];
+                var lines = [];
 
-        customFavorite.getTypesWithoutSystem(favorite).reverse().forEach(function (typeName) {
-            var typeUid = favorite.customTypes[typeName];
-            var typeList = favorite[typeUid] || [];
+                customFavorite.getTypesWithoutSystem(favorite).reverse().forEach(function (typeName) {
+                    var typeUid = favorite.customTypes[typeName];
+                    var typeList = favorite[typeUid] || [];
+                    var typeCards = favorite.customTypes.card.filter(function (card) {
+                        return typeList.indexOf(card.id) !== -1
+                    });
 
-            var typeCards = favorite.customTypes.card.filter(function (card) { return typeList.indexOf(card.id) !== -1 });
-            var lineItems = Lampa.Arrays.clone(typeCards.slice(0, 20));
+                    var lineItems = Lampa.Arrays.clone(typeCards.slice(0, 20));
+                    var i = 0;
 
-            var i = 0;
-            mediaTypes.forEach(function (m) {
-                var filter = Lampa.Utils.filterCardsByType(typeCards, m);
+                    mediaTypes.forEach(function (m) {
+                        var filter = Lampa.Utils.filterCardsByType(typeCards, m);
 
-                if (filter.length) {
-                    Lampa.Arrays.insert(lineItems, i, {
-                        cardClass: function cardClass() {
-                            return new CustomFavoriteFolder(filter, {
-                                title: typeName,
-                                category: typeUid,
-                                media: m
+                        if (filter.length) {
+                            Lampa.Arrays.insert(lineItems, i, {
+                                results: filter,
+                                media: m,
+                                params: {
+                                    module: Lampa.Maker.module('Card').only('Folder', 'Callback'),
+                                    createInstance: function(item_data) {
+                                        return new CustomFavoriteFolder(filter, {
+                                            title: typeName,
+                                            category: typeUid,
+                                            media: m
+                                        });
+                                    },
+                                    emit: {
+                                        onEnter: Lampa.Router.call.bind(Lampa.Router, 'favorite', {
+                                            title: typeName + ' - ' + m,
+                                            type: typeUid,
+                                            filter: m
+                                        })
+                                    }
+                                }
                             });
+                            i++;
                         }
                     });
-                    i++;
-                }
-            });
 
-            lineItems = lineItems.slice(0, 20);
-            lineItems.forEach(function(item) {
-                item.ready = false;
-            });
+                    lineItems = lineItems.slice(0, 20);
 
-            if (lineItems.length > 0) {
-                object.activity.component().append({
-                    title: typeName,
-                    results: lineItems,
-                    type: typeUid
+                    lineItems.forEach(function (item) {
+                        if (!item.params) {
+                            item.params = {
+                                emit: {
+                                    onEnter: Lampa.Router.call.bind(Lampa.Router, 'full', item),
+                                    onFocus: function() {
+                                        Lampa.Background.change(Lampa.Utils.cardImgBackground(item))
+                                    }
+                                }
+                            };
+                        }
+                    });
+
+                    if (lineItems.length > 0) {
+                        lines.push({
+                            title: typeName,
+                            results: lineItems,
+                            type: typeUid,
+                            params: {
+                                module: Lampa.Maker.module('Line').toggle(Lampa.Maker.module('Line').MASK.base, 'Event'),
+                                emit: {
+                                    onMore: Lampa.Router.call.bind(Lampa.Router, 'favorite', { type: typeUid, page: 2 })
+                                }
+                            }
+                        });
+                    }
                 });
+
+                if (lines.length) return lines;
             }
         });
     }
@@ -797,7 +830,7 @@
 
         var originalProfileWaiter = window.__profile_extra_waiter;
 
-        window.__profile_extra_waiter = function() {
+        window.__profile_extra_waiter = function () {
             var synced = Lampa.Storage.get(STORAGE_SYNC_KEY, 0) !== 0;
 
             if (typeof originalProfileWaiter === 'function') {
@@ -821,8 +854,8 @@
 
         var cardModule = Lampa.Maker.map('Card');
         var onFavoriteUpdate = cardModule.Favorite.onUpdate;
-        
-        cardModule.Favorite.onUpdate = function() {
+
+        cardModule.Favorite.onUpdate = function () {
             var self = this;
             onFavoriteUpdate.apply(self);
             cardFavoriteSvc.refreshCustomFavoriteIcon({
@@ -840,13 +873,13 @@
 
             var favoriteMenu = favoriteMenuList.menu;
 
-            favoriteMenuList.menu = function() {
-                var newItems = customFavorite.getTypes().map(function(typeName) {
+            favoriteMenuList.menu = function () {
+                var newItems = customFavorite.getTypes().map(function (typeName) {
                     var isChecked = customFavorite.getTypeList(typeName).indexOf(self.data.id) >= 0;
                     return {
                         checkbox: true,
                         checked: isChecked ? self.data.id : undefined,
-                        onCheck: function() {
+                        onCheck: function () {
                             customFavorite.toggleCard(typeName, self.data);
                             Lampa.Maker.map('Card').Favorite.onUpdate.apply(self);
                         },
@@ -854,13 +887,13 @@
                     };
                 })
 
-                var oldMenuItems = favoriteMenu.apply(favoriteMenuList).map(function(menuItem) {
+                var oldMenuItems = favoriteMenu.apply(favoriteMenuList).map(function (menuItem) {
                     if (!menuItem.onCheck) {
                         return menuItem;
                     }
 
                     var onCheck = menuItem.onCheck;
-                    menuItem.onCheck = function() {
+                    menuItem.onCheck = function () {
                         onCheck.apply(this, arguments);
                         Lampa.Maker.map('Card').Favorite.onUpdate.apply(self);
                     }
@@ -952,8 +985,6 @@
                 favoritePageSvc.renderAddButton();
                 var favorite = customFavorite.getFavorite();
 
-                //favoritePageSvc.renderLines();
-
                 customFavorite.getTypesWithoutSystem(favorite).reverse().forEach(function (typeName) {
                     var typeUid = favorite.customTypes[typeName];
                     var typeList = favorite[typeUid] || [];
@@ -969,6 +1000,8 @@
                 Lampa.Activity.active().activity.toggle();
             }
         });
+
+        favoritePageSvc.registerLines();
     }
 
     if (window.appready) {
