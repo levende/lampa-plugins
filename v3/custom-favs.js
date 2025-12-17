@@ -643,7 +643,7 @@
         Lampa.ContentRows.add({
             index: 1,
             screen: ['bookmarks'],
-            call: function(params, screen) {
+            call: function (params, screen) {
                 var favorite = customFavorite.getFavorite();
                 var mediaTypes = ['movies', 'tv'];
                 var lines = [];
@@ -667,7 +667,7 @@
                                 media: m,
                                 params: {
                                     module: Lampa.Maker.module('Card').only('Folder', 'Callback'),
-                                    createInstance: function(item_data) {
+                                    createInstance: function (item_data) {
                                         return new CustomFavoriteFolder(filter, {
                                             title: typeName,
                                             category: typeUid,
@@ -694,7 +694,7 @@
                             item.params = {
                                 emit: {
                                     onEnter: Lampa.Router.call.bind(Lampa.Router, 'full', item),
-                                    onFocus: function() {
+                                    onFocus: function () {
                                         Lampa.Background.change(Lampa.Utils.cardImgBackground(item))
                                     }
                                 }
@@ -707,10 +707,18 @@
                             title: typeName,
                             results: lineItems,
                             type: typeUid,
+                            total_pages: typeCards.length > 20 ? Math.ceil(typeCards.length / 20) : 1,
                             params: {
                                 module: Lampa.Maker.module('Line').toggle(Lampa.Maker.module('Line').MASK.base, 'Event'),
                                 emit: {
-                                    onMore: Lampa.Router.call.bind(Lampa.Router, 'favorite', { type: typeUid, page: 2 })
+                                    onMore: function () {
+                                        Lampa.Activity.push({
+                                            type: typeUid,
+                                            title: typeName,
+                                            component: 'favorite',
+                                            page: 2
+                                        });
+                                    }
                                 }
                             }
                         });
