@@ -642,6 +642,8 @@
     FavoritePageService.prototype.registerLines = function () {
         Lampa.ContentRows.add({
             index: 1,
+            name: 'custom_favs',
+            title: Lampa.Lang.translate('custom_favs'),
             screen: ['bookmarks'],
             call: function (params, screen) {
                 var favorite = customFavorite.getFavorite();
@@ -959,6 +961,11 @@
                 en: 'Invalid name',
                 uk: 'Некоректне ім’я',
                 ru: 'Некорректное имя'
+            },
+            custom_favs: {
+                en: 'Custom bookmarks',
+                uk: 'Користувацькі закладки',
+                ru: 'Пользовательские закладки'
             }
         });
 
