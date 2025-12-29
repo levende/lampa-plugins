@@ -72,6 +72,12 @@
         }
     };
 
+    if (Lampa.Manifest.app_digital >= 300) {
+        DISPLAY_OPTIONS.recent = {
+            title: Lampa.Lang.translate('title_recent_episodes')
+        }
+    }
+
     function LNumApiService() {
         var self = this;
         self.network = new Lampa.Reguest();
@@ -236,7 +242,11 @@
                     ? addEpisodesV3
                     : addEpisodesV2;
 
-                addEpisodes(partsData);
+                addEpisodes(partsData, DISPLAY_OPTIONS.episodes.title, Lampa.TimeTable.lately);
+            }
+
+            if (DISPLAY_OPTIONS.recent && DISPLAY_OPTIONS.recent.visible) {
+                addEpisodes(partsData, DISPLAY_OPTIONS.recent.title, Lampa.TimeTable.recently);
             }
 
             if (DISPLAY_OPTIONS.movies.visible) {
@@ -381,9 +391,9 @@
                 });
             }
 
-            function addEpisodesV3(partsData) {
+            function addEpisodesV3(partsData, title, getFunc) {
                 partsData.push(function (callback) {  
-                    var results = Lampa.TimeTable.lately().slice(0, 20);  
+                    var results = getFunc().slice(0, 20);  
                     
                     results.forEach(function(item) {  
                         item.params = {  
@@ -408,7 +418,7 @@
                     callback({  
                         source: 'tmdb',  
                         results: results,  
-                        title: DISPLAY_OPTIONS.episodes.title,  
+                        title: title,  
                         nomore: true  
                     });  
                 });
