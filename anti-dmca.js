@@ -7,6 +7,7 @@
         }
 
         window.anti_dmca_plugin = true;
+        window.lampa_settings.dcma = [];
 
         Lampa.Utils.dcma = function () { return undefined };
         var defaultSource = Lampa.Storage.get('source', 'cub');
