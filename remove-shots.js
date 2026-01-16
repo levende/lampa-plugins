@@ -6,7 +6,9 @@
     
     Lampa.Listener.follow('full', function (e) {
       if (e.type === 'complite') {
-          e.body.find('.shots-view-button').remove();
+          setTimeout(function() {
+              $('.shots-view-button').remove();
+          }, 100);
       }
     });
   }
@@ -14,9 +16,7 @@
     start();
   } else {
     Lampa.Listener.follow('app', function (event) {
-      if (event.type === 'ready') {
-        start();
-      }
+      if (event.type === 'ready') start();
     });
   }
 })();
