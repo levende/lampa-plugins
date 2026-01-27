@@ -21,6 +21,9 @@
                 Lampa.Storage.set('source', 'tmdb', true);
                 Lampa.Activity.replace(active);
                 Lampa.Storage.set('source', defaultSource, true);
+                setTimeout(function() {
+                    Lampa.Controller.toggle('content');
+                }, 250);
             }
         });
     }
