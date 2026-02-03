@@ -88,7 +88,7 @@
     }
 
     var network = new Lampa.Reguest();
-    var api_url = 'https://ws.pris.cam/api/collections/';
+    var api_url = 'https://cors.fx666.workers.dev/https://ws.pris.cam/api/collections/';
     var collections = [{
       hpu: 'new',
       title: 'Новинки'
