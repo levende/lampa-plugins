@@ -72,7 +72,7 @@
                 $('body > .selectbox').find('.scroll__body').prepend($selectBoxItem);
             }
 
-            if (!active.movie || !Array.isArray(active.movie.seasons)) {
+            if (!active.movie || !active.movie.first_air_date) {
                 Lampa.Controller.collectionSet($('body > .selectbox').find('.scroll__body'));
                 Lampa.Controller.collectionFocus($('.selectbox-item').first());
                 return;
