@@ -114,7 +114,8 @@
                     Lampa.Controller.toggle('content');
 
                     var $episode = $('.online-prestige--full').filter(function () {
-                        return $(this).find('.online-prestige__episode-number').text().trim() == episode;
+                        var num = parseInt($(this).find('.online-prestige__episode-number').text().trim(), 10);
+                        return num == parseInt(episode, 10);
                     });
 
                     if ($episode.length) {
