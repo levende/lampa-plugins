@@ -44,7 +44,12 @@
             var active = Lampa.Activity.active();
             var componentName = active.component.toLowerCase();
 
-            if (componentName !== 'online' && componentName !== 'lampac' && componentName !== 'bandera_online' && componentName.indexOf('bwa') !== 0) return;
+            if (componentName.indexOf('mod') != -1
+                || componentName == 'torrents' 
+                || !active.movie
+                || !active.search
+                || !active.search_one
+                || !active.search_two) return;
 
             var $filterTitle = $('.selectbox__title');
 
