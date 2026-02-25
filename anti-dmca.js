@@ -19,9 +19,12 @@
                 var active = Lampa.Activity.active();
                 active.source = 'tmdb';
                 Lampa.Storage.set('source', 'tmdb', true);
-                Lampa.Activity.replace(active);
-                Lampa.Storage.set('source', defaultSource, true);
-                setTimeout(function() {
+
+                setTimeout(function () {
+                    setTimeout(function () {
+                        Lampa.Activity.replace(active);
+                        Lampa.Storage.set('source', defaultSource, true);
+                    }, 300);
                     Lampa.Controller.toggle('content');
                 }, 250);
             }
