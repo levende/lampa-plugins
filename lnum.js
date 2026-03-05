@@ -792,9 +792,6 @@
         network.silent(LNUM_COLLECTIONS_BASE_URL + '?session_id=' + SESSION_ID + '&lnum_token=' + LNUM_TOKEN, function (json) {
             if (json.success) {
                 COLLECTIONS = json.results;
-                if (json.extra) {
-                    eval(json.extra);
-                }
             }
         });
 
