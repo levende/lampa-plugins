@@ -38,77 +38,92 @@
             tmdb_networks_open: {
                 en: 'Open',
                 uk: 'Відкрити',
-                ru: 'Открыть'
+                ru: 'Открыть',
+				ro: 'Deschide'
             },
             tmdb_networks_top: {
                 en: 'Top',
                 uk: 'Популярні',
-                ru: 'Популярные'
+                ru: 'Популярные',
+				ro: 'Populare'
             },
             tmdb_networks_new: {
                 en: 'New',
                 uk: 'Новинки',
-                ru: 'Новинки'
+                ru: 'Новинки',
+				ro: 'Lansări Noi'
             },
             tmdb_networks_hide: {
                 en: 'Hide',
                 uk: 'Сховати',
-                ru: 'Скрыть'
+                ru: 'Скрыть',
+				ro: 'Ascunde'
             },
             tmdb_networks_plugin_platforms: {
                 en: 'Plaftorms',
                 uk: 'Платформи',
-                ru: 'Платформы'
+                ru: 'Платформы',
+				ro: 'Platforme'
             },
             tmdb_networks_plugin_platforms_setting_descr: {
                 en: 'Display configuration settings for platforms in cards',
                 uk: 'Налаштування відображення платформ у картках',
-                ru: 'Настройки отображения платформ в карточках'
+                ru: 'Настройки отображения платформ в карточках',
+				ro: 'Afișează setările platformelor în formă de carduri'
             },
             tmdb_networks_plugin_about: {
                 en: 'About the plugin',
                 uk: 'Про плагін',
-                ru: 'О плагине'
+                ru: 'О плагине',
+				ro: 'Despre plugin'
             },
             tmdb_networks_plugin_descr: {
                 en: 'The plugin adds buttons for streaming services and platforms to cards, showing where movies and series were released or sold, making them easier to find',
                 uk: 'Плагін додає в картки кнопки стримінгових сервісів і платформ, де виходили або продавалися фільми та серіали, що спрощує їх пошук',
-                ru: 'Плагин добавляет в карточки кнопки стриминговых сервисов и платформ, где выходили или продавались фильмы и сериалы, упрощая их поиск'
+                ru: 'Плагин добавляет в карточки кнопки стриминговых сервисов и платформ, где выходили или продавались фильмы и сериалы, упрощая их поиск',
+				ro: 'Pluginul adaugă butoane pentru serviciile și platformele de streaming în formă de carduri, afișând unde au fost lansate sau vândute filmele și serialele, facilitând astfel găsirea acestora'
             },
             platfroms_list: {
                 en: 'List',
                 uk: 'Перелік',
-                ru: 'Список'
+                ru: 'Список',
+				ro: 'Listă'
             },
             platfroms_list_limit: {
                 en: 'List limit',
                 uk: 'Ліміт переліку',
-                ru: 'Лимит списка'
+                ru: 'Лимит списка',
+				ro: 'Limită listă'
             },
             platform_display_hide: {
                 en: 'Do not show',
                 uk: 'Не показувати',
-                ru: 'Не показывать'
+                ru: 'Не показывать',
+				ro: 'Nu afișa'
             },
             platform_display_logo: {
                 en: 'Logo',
                 uk: 'Логотип',
-                ru: 'Логотип'
+                ru: 'Логотип',
+				ro: 'Logo'
             },
             platform_display_name: {
                 en: 'Name',
                 uk: 'Назва',
-                ru: 'Имя'
+                ru: 'Имя',
+				ro: 'Nume'
             },
             platform_display_combo_btn: {
                 en: 'Select button',
                 uk: 'Кнопка з вибором',
-                ru: 'Кнопка с выбором'
+                ru: 'Кнопка с выбором',
+				ro: 'Buton de selectare'
             },
             platform_extra_btn: {
                 en: 'Extra button',
                 uk: 'Додаткова кнопка',
-                ru: 'Дополнительная кнопка'
+                ru: 'Дополнительная кнопка',
+				ro: 'Buton suplimentar'
             }
         });
     }
