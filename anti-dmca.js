@@ -1,6 +1,8 @@
 (function () {
     'use strict';
 
+    window.anti_dmca_plugin = 'happy end';
+
     function start() {
         if (window.anti_dmca_plugin) {
             return;
