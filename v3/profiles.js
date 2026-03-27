@@ -15,7 +15,7 @@
     window.__profile_extra_waiter = function() { return true; };
 
     var pluginManifest = {
-        version: '3.1.8',
+        version: '3.2.0',
         author: 'levende',
         docs: 'https://levende.github.io/lampa-plugins/docs/profiles',
         contact: 'https://t.me/levende',
