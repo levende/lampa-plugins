@@ -15,7 +15,7 @@
     window.__profile_extra_waiter = function() { return true; };
 
     var pluginManifest = {
-        version: '3.1.7',
+        version: '3.1.8',
         author: 'levende',
         docs: 'https://levende.github.io/lampa-plugins/docs/profiles',
         contact: 'https://t.me/levende',
@@ -869,28 +869,10 @@
             return !!Lampa.Storage.get('account', '{}').token && Lampa.Storage.get('account_use', false);
         }
 
-        function compareVersions(v1, v2) {
-            var a = v1.split('.').map(x => parseInt(x, 10));
-            var b = v2.split('.').map(x => parseInt(x, 10));
-            var len = Math.max(a.length, b.length);
-
-            for (var i = 0; i < len; i++) {
-                var diff = (a[i] || 0) - (b[i] || 0);
-                if (diff !== 0) return diff > 0 ? 1 : -1;
-            }
-            return 0;
-        }
-
         function testBackendAccess(callback) {
             apiSvc.send(
-                state.host + '/version',
-                function(version) {
-                    apiSvc.send(
-                        state.host + '/testaccsdb',
-                        function (response) { callback(!!response && response.accsdb == false, version); },
-                        function () { callback(false, 0); }
-                    );
-                },
+                state.host + '/testaccsdb',
+                function (response) { callback(!!response && response.accsdb == false); },
                 function () { callback(false, 0); }
             );
         }
@@ -995,12 +977,7 @@
             window.sync_disable = !state.syncEnabled;
             configureListeners();
 
-            testBackendAccess(function (online, version) {
-                if (compareVersions(String(version), '148.12') >= 0 && compareVersions(String(version), '148.14') <= 0) {
-                    Lampa.Noty.show('Invalid Lampac version: ' + version + '. Please update to 148.15 or higher.');
-                    return;
-                }
-
+            testBackendAccess(function (online) {
                 getProfiles(function (profiles) {
                     state.profiles = profiles;
 
