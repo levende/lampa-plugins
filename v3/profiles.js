@@ -701,6 +701,7 @@
                                             return;
                                         }
 
+                                        Lampa.Timeline.read();
                                         Lampa.Favorite.read();
                                     }, 100);
                                 });
@@ -810,8 +811,10 @@
                     Lampa.Storage.set(field, backupValue);
                 }
             });
-            
+
+            Lampa.Timeline.read();
             Lampa.Favorite.read();
+            
             logger.debug('Profile data has been restored for profile', profile);
         }
 
@@ -830,7 +833,11 @@
 
         function reset() {
             state.sync.keys.forEach(localStorage.removeItem.bind(localStorage));
-            Lampa.Storage.set('favorite', {});
+            
+            Lampa.Storage.set('file_view', '{}');
+            Lampa.Timeline.read();
+
+            Lampa.Storage.set('favorite', '{}');
             Lampa.Favorite.read(true);
 
             state.sync.timestamps.forEach(function (timestamp) {
