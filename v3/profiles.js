@@ -948,9 +948,9 @@
             });
         }
 
-        function syncScriptUsed() {
+        function syncScriptUsed(type) {
             var isSyncPluginEnabled = Lampa.Storage.get('plugins', '[]').some(function (plugin) {
-                return plugin.status == 1 && isSyncScript(plugin.url);
+                return plugin.status == 1 && isTargetScript(plugin.url);
             });
 
             if (isSyncPluginEnabled) {
@@ -962,11 +962,12 @@
             });
 
             return scripts.some(function (src) {
-                return isSyncScript(src);
+                return isTargetScript(src, type)
             });
 
-            function isSyncScript(url) {
-                return url.indexOf('/sync.js') >= 0 || url.indexOf('/sync/') >= 0;
+            function isTargetScript(url) {
+                return url.indexOf('/' + type + '.js') >= 0
+                    || url.indexOf('/' + type + '/') >= 0;
             }
         }
 
@@ -1014,8 +1015,15 @@
 
                     notifySvc.notify(currentProfile, 'changed');
 
-                    if (state.online && state.syncEnabled && !syncScriptUsed()) {
+                    if (state.online && state.syncEnabled && !syncScriptUsed('sync')) {
                         var scriptPath = state.host + '/sync.js';
+                        Lampa.Utils.putScriptAsync([scriptPath], function () {
+                            logger.debug('The script has been added to the app', scriptPath);
+                        });
+                    }
+
+                    if (state.online && state.syncEnabled && !syncScriptUsed('timecode')) {
+                        var scriptPath = state.host + '/timecode.js';
                         Lampa.Utils.putScriptAsync([scriptPath], function () {
                             logger.debug('The script has been added to the app', scriptPath);
                         });
