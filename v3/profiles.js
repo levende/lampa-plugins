@@ -650,7 +650,7 @@
         this.render = function () {
             var currentProfile = state.getCurrentProfile();
 
-            var profileButton = $('<div class="head__action selector open--profile"><img id="user_profile_icon" src="' + currentProfile.icon + '"/></div>');
+            var profileButton = $('<div class="head__action selector open--profile levende"><img id="user_profile_icon" src="' + currentProfile.icon + '"/></div>');
             $('.open--profile').before(profileButton).remove();
 
             var showProfileSelect = function () {
