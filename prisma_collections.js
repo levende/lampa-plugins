@@ -88,7 +88,7 @@
     }
 
     var network = new Lampa.Reguest();
-    var api_url = 'https://cors.bwa.workers.dev/https://ws.pris.cam/api/collections/';
+    var api_url = 'https://cors.bwa.workers.dev/https://luno.kim/api/collections/';
     var collections = [{
       hpu: 'new',
       title: 'Новинки'
