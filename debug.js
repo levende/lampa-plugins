@@ -1,18 +1,50 @@
 /**
- * Тимчасовий діагностичний плагін: хто вбиває активність / закриває модалку
+ * Тимчасовий діагностичний плагін: хто вбиває активність / закриває модалку.
  *
+ * Standalone-файл, у збірку НЕ входить (не кладти в public/ — поїде всім).
+ * Хостити будь-де, але віддавати з MIME application/javascript: Лампа
+ * підключає плагіни через <script src> (src/utils/utils.js:434), а
+ * raw.githubusercontent.com і gist віддають text/plain + nosniff, і Chromium
+ * відмовляється їх виконувати.
+ *
+ * Встановлення: Налаштування -> Розширення -> додати за URL, потім
+ * ПЕРЕЗАПУСТИТИ апп — Plugins.task (src/core/plugins.js:236) будує список
+ * завантаження один раз на старті.
+ *
+ * URL має бути абсолютний: відносний ('./plugins/...') ламає updatePluginDB,
+ * нативний шар APK відповідає "Invalid protocol; use http or https".
+ *
+ * Читання логу:
+ *   1. фокус на шапку -> UP 11 разів -> вкладка "App"
+ *   2. Налаштування -> Інше -> Експорт (src/custom/interaction/logs.js)
+ * Обидва працюють, бо src/interaction/console.js перехоплює console.log.
+ *
+ * Сумісність: цілі з src/custom/doc/es5-compatibility.md — chrome 38,
+ * safari 7 (Orsay WebKit), samsung 4. Тому тут чистий ES5 без транспіляції:
+ * ніяких const/let, стрілок, шаблонних рядків, Object.keys, bind, Promise.
+ * Все, що може бути відсутнім на давніх рушіях, під feature-detect.
+ *
+ * Після закриття питання — видалити файл.
+ */
 (function () {
     'use strict'
 
     var TAG = '[AD]'
-    var t0 = Date.now()
 
-    function stamp() {
-        return '+' + ((Date.now() - t0) / 1000).toFixed(1) + 's'
+    // Date.now немає на найдавніших рушіях
+    function now() {
+        return Date.now ? Date.now() : +new Date()
     }
 
+    var t0 = now()
+
+    function stamp() {
+        return '+' + ((now() - t0) / 1000).toFixed(1) + 's'
+    }
+
+    // console може бути відсутнім до того, як Лампа підмінить його своїм
     function log(msg) {
-        console.log(TAG, stamp(), msg)
+        if (window.console && console.log) console.log(TAG, stamp(), msg)
     }
 
     function loud(msg) {
@@ -23,8 +55,26 @@
         } catch (e) {}
     }
 
+    // JSON.stringify падає на циклічних обʼєктах і віддає undefined для undefined
+    function brief(value, max) {
+        var str
+
+        try {
+            str = JSON.stringify(value)
+        } catch (e) {
+            str = '[unserializable]'
+        }
+
+        return String(str).slice(0, max || 60)
+    }
+
     /**
      * Два кадри стека нижче нашої обгортки — справжній викликач і його контекст.
+     *
+     * V8 дає "Error\n    at fn (url:line)", WebKit — "fn@url:line" без першого
+     * рядка, а на дуже старих рушіях .stack взагалі немає. Тому не рахуємо кадри
+     * від нуля, а шукаємо власний фрейм 'origin' і беремо два наступних.
+     *
      * ponytail: два рядки замість повного стека. Якщо винуватця не видно —
      * підняти ліміт out.length або дописати console.trace() у потрібну обгортку.
      */
@@ -33,18 +83,17 @@
 
         try {
             stack = (new Error()).stack || ''
-        } catch (e) {
-            return '?'
-        }
+        } catch (e) {}
+
+        if (!stack) return 'no stack'
 
         var lines = stack.split('\n')
-        var base = 3 // Error, origin, наша обгортка — далі справжній викликач
+        var base = 2
+        var i
 
-        // Плагін інжектиться інлайном (createPluginDB у core/plugins.js), тому
-        // фільтрувати за іменем файлу не можна — рахуємо кадри від власного.
-        for (var i = 0; i < lines.length; i++) {
+        for (i = 0; i < lines.length; i++) {
             if (lines[i].indexOf('origin') > -1) {
-                base = i + 2
+                base = i + 2 // +1 наша обгортка, +2 справжній викликач
 
                 break
             }
@@ -52,15 +101,17 @@
 
         var out = []
 
-        for (var j = base; j < lines.length && out.length < 2; j++) {
-            var line = lines[j].replace(/^\s*at\s*/, '').trim()
+        for (i = base; i < lines.length && out.length < 2; i++) {
+            var line = lines[i].replace(/^\s*at\s+/, '')
+
+            // без String.prototype.trim на всяк випадок
+            line = line.replace(/^\s+/, '').replace(/\s+$/, '')
 
             if (line) out.push(line.slice(0, 90))
         }
 
-        return out.join(' < ') || '?'
+        return out.length ? out.join(' < ') : '?'
     }
-
 
     function boot() {
         // ── стартовий зліпок ────────────────────────────────────────────
@@ -68,9 +119,11 @@
             ', activities=' + Lampa.Activity.all().length)
 
         try {
-            Lampa.Plugins.get().forEach(function (p) {
-                log('plugin status=' + p.status + ' ' + (p.name || '') + ' ' + p.url)
-            })
+            var list = Lampa.Plugins.get()
+
+            for (var i = 0; i < list.length; i++) {
+                log('plugin status=' + list[i].status + ' ' + (list[i].name || '') + ' ' + list[i].url)
+            }
         } catch (e) {}
 
         // ── якір: плеєр закрився ────────────────────────────────────────
@@ -129,7 +182,7 @@
         Lampa.Storage.listener.follow('change', function (e) {
             if (watch.indexOf(e.name) < 0) return
 
-            loud('storage ' + e.name + '=' + JSON.stringify(e.value).slice(0, 60) + ' <- ' + origin())
+            loud('storage ' + e.name + '=' + brief(e.value) + ' <- ' + origin())
         })
 
         // ── внутрішній тригер refresh(true): activity.js:112 ────────────
@@ -138,24 +191,33 @@
             if (e.target !== 'favorite') return
 
             var hot = e.reason === 'read' || e.reason === 'profile'
-            var out = hot ? loud : log
+            var write = hot ? loud : log
 
-            out('state:changed favorite/' + e.reason + (hot ? ' => REFRESH ALL' : '') +
+            write('state:changed favorite/' + e.reason + (hot ? ' => REFRESH ALL' : '') +
                 ' <- ' + origin())
         })
 
         // ── HOME -> повернення в апп ────────────────────────────────────
-        document.addEventListener('visibilitychange', function () {
-            log('visibility=' + document.visibilityState +
+        // Safari 7 / старий WebKit знає лише webkit-префіксний варіант.
+        var modern = typeof document.visibilityState !== 'undefined'
+
+        document.addEventListener(modern ? 'visibilitychange' : 'webkitvisibilitychange', function () {
+            log('visibility=' + (modern ? document.visibilityState : document.webkitVisibilityState) +
                 ', activities=' + Lampa.Activity.all().length)
         })
 
         loud('activity-debug ready')
     }
 
-    // Плагін може стартувати раніше, ніж збереться Lampa
+    // Плагін може стартувати раніше, ніж збереться Lampa. Ліміт спроб, щоб не
+    // крутити таймер вічно там, де Lampa так і не зʼявиться.
+    var tries = 0
+
     function wait() {
-        if (window.Lampa && Lampa.Activity && Lampa.Modal && Lampa.Player && Lampa.Storage && Lampa.Plugins) return boot()
+        if (window.Lampa && Lampa.Activity && Lampa.Modal && Lampa.Player &&
+            Lampa.Storage && Lampa.Listener && Lampa.Plugins) return boot()
+
+        if (++tries > 150) return log('give up waiting for Lampa') // ~15 c
 
         setTimeout(wait, 100)
     }
