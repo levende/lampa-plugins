@@ -651,8 +651,16 @@
             var currentProfile = state.getCurrentProfile();
 
             var profileButton = $('<div class="head__action selector open--profile levende"><img id="user_profile_icon" src="' + currentProfile.icon + '"/></div>');
-            $('.open--profile').before(profileButton).remove();
 
+            $('.head__action.open--profile').remove();
+
+            var $actions = (Lampa.Head && Lampa.Head.render ? $(Lampa.Head.render()) : $('body')).find('.head__actions');
+            if (!$actions.length) $actions = $('.head__actions');
+
+            var $settings = $actions.find('.head__action.open--settings');
+            if ($settings.length) $settings.last().after(profileButton);
+            else $actions.append(profileButton);
+            
             var showProfileSelect = function () {
                 Lampa.Select.show({
                     title: Lampa.Lang.translate('account_profiles'),
