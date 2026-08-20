@@ -737,6 +737,10 @@
 
     var favoritePageSvc = new FavoritePageService();
 
+    function isPerson(data) {
+        return !!data && !!(data.profile_path || data.known_for_department || typeof data.gender !== 'undefined');
+    }
+
     function CardFavoriteService() {
         this.extendContextMenu = function (object) {
             var self = this;
@@ -871,6 +875,9 @@
         cardModule.Favorite.onUpdate = function () {
             var self = this;
             onFavoriteUpdate.apply(self);
+
+            if (isPerson(self.data)) return;
+
             cardFavoriteSvc.refreshCustomFavoriteIcon({
                 data: self.data,
                 card: self.html
@@ -883,6 +890,8 @@
             var favoriteMenuList = this.menu_list.filter(function (menu) {
                 return menu.title === Lampa.Lang.translate('settings_input_links');
             })[0];
+
+            if (!favoriteMenuList || isPerson(self.data)) return onMenuCreate.apply(this, arguments);
 
             var favoriteMenu = favoriteMenuList.menu;
 
