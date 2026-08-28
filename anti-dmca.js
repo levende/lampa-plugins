@@ -18,16 +18,15 @@
         if (!Array.isArray(card.genres)) card.genres = [];
     }
 
+    // Дописывать поля карточки в произвольный ответ нельзя: чужие плагины делают
+    // for (var i in result) и падают на подсунутых ключах. Поэтому — только списки
+    // (results[]) и только объекты, которые реально являются карточкой (есть id).
     function normalizeData(data) {
-        if (!data || typeof data !== 'object') return;
+        if (!data || typeof data !== 'object' || Array.isArray(data)) return;
         if ('results' in data && !Array.isArray(data.results)) data.results = [];
-        normalizeCard(data);
-        if (data.movie && typeof data.movie === 'object') normalizeCard(data.movie);
-        if (Array.isArray(data.results)) {
-            data.results.forEach(function (c) {
-                if (c && typeof c === 'object') normalizeCard(c);
-            });
-        }
+        if (Array.isArray(data.results)) data.results.forEach(normalizeCard);
+        else if (data.id) normalizeCard(data);
+        if (data.movie) normalizeCard(data.movie);
     }
 
     function patchParseCountries() {
@@ -57,34 +56,7 @@
         return candidates.length > 0;
     }
 
-    var _hooked = false;
-    function hookRequestBefore() {
-        if (_hooked || typeof Lampa === 'undefined' || !Lampa.Listener) return;
-        _hooked = true;
-        Lampa.Listener.follow('request_before', function (event) {
-            if (!event || !event.params) return;
-            var params = event.params;
-            if (typeof params.complite !== 'function') return;
-            var _origComplite = params.complite;
-            params.complite = function (data) {
-                try { normalizeData(data); } catch (e) {}
-                return _origComplite(data);
-            };
-        });
-    }
-
-    hookRequestBefore();
-    if (!_hooked) {
-        var _hookTimer = setInterval(function () {
-            hookRequestBefore();
-            if (_hooked) clearInterval(_hookTimer);
-        }, 50);
-        setTimeout(function () { clearInterval(_hookTimer); }, 10000);
-    }
-
     function start() {
-        hookRequestBefore();
-
         if (Lampa && Lampa.Utils) {
             Lampa.Utils.dcma = function () { return false; };
         }
@@ -105,19 +77,26 @@
             // вместо полных данных. У обоих источников (tmdb и cub) он содержит append_to_response.
             var isDetail = url.indexOf('append_to_response') >= 0;
 
-            // Заглушку определяем не только по флагу blocked: в кэше (7 дней) могла осесть
-            // заглушка с уже сброшенным blocked=false. У настоящей карточки всегда есть id и title/name.
-            var d = event.data;
-            var stripped = isDetail && (!d.id || !(d.title || d.name));
-
-            if (!d.blocked && !stripped) return;
-
             // URL бывает api.themoviedb.org/3/movie/1 (tmdb), tmdb.<cub>/3/movie/1 (cub)
             // или через прокси — без /api/, поэтому матчим только /movie/<id> | /tv/<id>
             var match = url.match(/\/(movie|tv)\/(\d+)/);
 
+            // Нормализуем ТОЛЬКО ответы TMDB API. Ответы остальных плагинов (таймкоды,
+            // онлайн-балансеры) трогать нельзя — там свои форматы.
+            if (url.indexOf('/3/') < 0 && !match) return;
+
+            var d = event.data;
+
+            try { normalizeData(d); } catch (e) {}
+
+            // Заглушку определяем не только по флагу blocked: в кэше (7 дней) могла осесть
+            // заглушка с уже сброшенным blocked=false. У настоящей карточки всегда есть id и title/name.
+            var stripped = isDetail && (!d.id || !(d.title || d.name));
+
+            if (!d.blocked && !stripped) return;
+
             if (!isDetail || !match) {
-                // Не детальная карточка: снять флаг можно, данные уже нормализованы хуком request_before
+                // Не детальная карточка: снять флаг можно, данные уже нормализованы выше
                 if (!isDetail) d.blocked = false;
                 // isDetail без match — оставляем blocked: пусть покажет штатный DMCA-экран, а не упадёт
                 return;
