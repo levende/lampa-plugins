@@ -509,14 +509,12 @@
     function FavoritePageService() {
     }
 
-    FavoritePageService.prototype.renderCustomFavoriteButton = function (type) {
+    FavoritePageService.prototype.renderCustomFavoriteButton = function (type, $render) {
         var customTypeCssClass = 'custom-type-' + type.uid;
 
         var $register = Lampa.Template.js('register').addClass('selector').addClass(customTypeCssClass).addClass('custom-type');
         $register.find('.register__name').text(type.name).addClass(customTypeCssClass);
         $register.find('.register__counter').text(type.counter || 0).addClass(customTypeCssClass);
-
-        var $render = Lampa.Activity.active().activity.render();
 
         $register.on('hover:long', function () {
             var menu = [
@@ -606,13 +604,13 @@
         };
     }
 
-    FavoritePageService.prototype.renderAddButton = function () {
+    FavoritePageService.prototype.renderAddButton = function ($render) {
         var self = this;
 
         var $register = Lampa.Template.js('register').addClass('selector').addClass('new-custom-type');
         $register.find('.register__counter').html('<img src="./img/icons/add.svg"/>');
 
-        $('.register:first').before($register);
+        $('.register:first', $render).before($register);
 
         $register.on('hover:enter', function () {
             var inputOptions = {
@@ -631,7 +629,7 @@
 
                 try {
                     var type = customFavorite.createType(value);
-                    self.renderCustomFavoriteButton(type);
+                    self.renderCustomFavoriteButton(type, $render);
                 } finally {
                     Lampa.Controller.toggle('content');
                 }
@@ -658,6 +656,18 @@
                     });
 
                     var lineItems = Lampa.Arrays.clone(typeCards.slice(0, 20));
+
+                    lineItems.forEach(function (item) {
+                        item.params = {
+                            emit: {
+                                onEnter: Lampa.Router.call.bind(Lampa.Router, 'full', item),
+                                onFocus: function () {
+                                    Lampa.Background.change(Lampa.Utils.cardImgBackground(item))
+                                }
+                            }
+                        };
+                    });
+
                     var i = 0;
 
                     mediaTypes.forEach(function (m) {
@@ -690,19 +700,6 @@
                     });
 
                     lineItems = lineItems.slice(0, 20);
-
-                    lineItems.forEach(function (item) {
-                        if (!item.params) {
-                            item.params = {
-                                emit: {
-                                    onEnter: Lampa.Router.call.bind(Lampa.Router, 'full', item),
-                                    onFocus: function () {
-                                        Lampa.Background.change(Lampa.Utils.cardImgBackground(item))
-                                    }
-                                }
-                            };
-                        }
-                    });
 
                     if (lineItems.length > 0) {
                         lines.push({
@@ -950,7 +947,7 @@
                 for (var i = 0; i < customTypeCards.length; i++) {
                     var favCard = customTypeCards[i];
                     if (cardIds.indexOf(favCard.id) !== -1) {
-                        filtered.push(favCard);
+                        filtered.push(Lampa.Arrays.clone(favCard));
                     }
                 }
 
@@ -1002,33 +999,31 @@
             }
         });
 
-        Lampa.Storage.listener.follow('change', function (event) {
-            if (event.name !== 'activity') {
+        Lampa.Listener.follow('activity', function (event) {
+            if (event.type !== 'create' || event.component !== 'bookmarks') {
                 return;
             }
 
-            if (Lampa.Activity.active().component === 'bookmarks') {
-                if ($('.new-custom-type').length !== 0) {
-                    return;
-                }
+            var $render = event.object.activity.render();
 
-                favoritePageSvc.renderAddButton();
-                var favorite = customFavorite.getFavorite();
-
-                customFavorite.getTypesWithoutSystem(favorite).reverse().forEach(function (typeName) {
-                    var typeUid = favorite.customTypes[typeName];
-                    var typeList = favorite[typeUid] || [];
-                    var typeCounter = typeList.length;
-
-                    favoritePageSvc.renderCustomFavoriteButton({
-                        name: typeName,
-                        uid: typeUid,
-                        counter: typeCounter
-                    });
-                });
-
-                Lampa.Activity.active().activity.toggle();
+            if ($('.new-custom-type', $render).length !== 0) {
+                return;
             }
+
+            favoritePageSvc.renderAddButton($render);
+            var favorite = customFavorite.getFavorite();
+
+            customFavorite.getTypesWithoutSystem(favorite).reverse().forEach(function (typeName) {
+                var typeUid = favorite.customTypes[typeName];
+                var typeList = favorite[typeUid] || [];
+                var typeCounter = typeList.length;
+
+                favoritePageSvc.renderCustomFavoriteButton({
+                    name: typeName,
+                    uid: typeUid,
+                    counter: typeCounter
+                }, $render);
+            });
         });
 
         favoritePageSvc.registerLines();
