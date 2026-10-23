@@ -43,3 +43,13 @@ Welcome to the page! This page contains a collection of plugins designed to enha
 - **[balancer-sanitizer.js](https://levende.github.io/lampa-plugins/balancer-sanitizer.js)**
 
 *Note: Please ensure you follow the installation instructions carefully and review the plugin description for any important details before use.*
+
+## Amo Server (Easy Install) (`install_amo.js`)
+
+Быстрая установка и переключение сервера Lampa на app.amo.watch (Фильмы 4K, Сериалы, ТВ, 14 языков). Работает на Smart TV, Android TV, Tizen, webOS, ПК и в браузере.
+
+- **URL плагина (Установка в Lampa → Настройки → Расширения → Добавить плагин):**
+```text
+https://app.amo.watch/install_amo.js
+```
+- **Описание (EN):** Easy one-step Lampa server switcher to app.amo.watch (4K Movies, Series, Live TV & 14 languages). Works on Smart TV, Android TV, Tizen, webOS, Desktop & Browser.
