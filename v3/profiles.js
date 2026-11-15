@@ -121,29 +121,35 @@
         var syncUrl = String(xhr._url || '');
         var syncMethod = String(xhr._method || 'GET').toUpperCase();
 
-        if (SYNC_URL_RE.test(syncUrl)) {
-            var writeFamily = wholeFileWrite(syncMethod, syncUrl);
-
-            // A request built while the profile is being switched may carry the previous profile's id or data:
-            // it is not sent, the sender gets an ordinary network error. Only sync.js imports retry by themselves; the
-            // rest is pulled again by pullProfile, and local changes go out with the next whole-file export
-            if (syncHold || (syncGated && writeFamily && !syncPulled[writeFamily])) {
-                logger.warning('Sync request held', syncMethod, syncUrl);
-
-                setTimeout(function () {
-                    if (typeof xhr.onerror === 'function') {
-                        xhr.onerror();
-                    }
-                }, 0);
-
-                return;
-            }
-
-            syncInflight = syncInflight.filter(function (item) {
-                return item.readyState < 4;
-            });
-            syncInflight.push(xhr);
+        // Everything else (hls.js segments with responseType arraybuffer among them) goes out untouched:
+        // reading responseText of a non-text response throws
+        if (!SYNC_URL_RE.test(syncUrl)) {
+            return originalSend.apply(this, arguments);
         }
+
+        var writeFamily = wholeFileWrite(syncMethod, syncUrl);
+
+        // A request built while the profile is being switched may carry the previous profile's id or data:
+        // it is not sent, the sender gets an ordinary network error. Only sync.js imports retry by themselves; the
+        // rest is pulled again by pullProfile, and local changes go out with the next whole-file export
+        if (syncHold || (syncGated && writeFamily && !syncPulled[writeFamily])) {
+            logger.warning('Sync request held', syncMethod, syncUrl);
+
+            // A dispatched event reaches both xhr.onerror and addEventListener('error') senders
+            setTimeout(function () {
+                var event = document.createEvent('Event');
+
+                event.initEvent('error', false, false);
+                xhr.dispatchEvent(event);
+            }, 0);
+
+            return;
+        }
+
+        syncInflight = syncInflight.filter(function (item) {
+            return item.readyState < 4;
+        });
+        syncInflight.push(xhr);
 
         xhr.onreadystatechange = function () {
             // Runs before the sender's own handlers, so a write the sender makes from them (sync.js exports
@@ -151,6 +157,7 @@
             // An answer with success false and a msg other than outFile pulled nothing. The current server sends its
             // busy answers (semaphore, fileLock) as 502/503 already; this keeps the gate shut if one ever comes as 200
             var pulled = xhr.readyState === 4 && xhr.status === 200 && syncMethod === 'GET'
+                && (xhr.responseType === '' || xhr.responseType === 'text')
                 && !/"success":\s*false,\s*"msg":\s*"(?!outFile")/.test(xhr.responseText) ? syncPull(syncUrl) : '';
 
             if (pulled) {
@@ -727,7 +734,7 @@
             logger.info('Start', pluginManifest);
 
             window.addEventListener('error', function (e) {
-                if (e.filename.indexOf('profiles.js') !== -1) {
+                if (String(e.filename || '').indexOf('profiles.js') !== -1) {
                     var stack = (e.error && e.error.stack ? e.error.stack : e.stack || '').split('\n').join('<br>');
                     logger.error('JS ERROR', e.filename, (e.error || e).message, stack);
                 }
