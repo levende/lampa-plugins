@@ -41,30 +41,124 @@
     };
 
     // bookmark.js pull routes: /list before lampac 21.09.2026, /dump and /changelog after
-    var BOOKMARK_PULL_PATH_RE = /^\/(list|dump|changelog)(\?|$)/;
     var BOOKMARK_PULL_URL_RE = /\/bookmark\/(list|dump|changelog)(\?|$)/;
 
-    // lampac event names contain a Cyrillic "С" (U+0421, bookmark_importСompleted), normalize before comparing
-    function lampacEventName(name) {
-        return String(name || '').replace(/\u0421/g, 'C');
-    }
+    var favoriteSyncedTimer;
 
     function markFavoriteSynced() {
-        setTimeout(function () {
+        clearTimeout(favoriteSyncedTimer);
+        favoriteSyncedTimer = setTimeout(function () {
             Lampa.Storage.set('lampac_sync_favorite', Date.now());
         }, 350);
+    }
+
+    // sync.js, bookmark.js, timecode.js and custom-favs.js all send through XMLHttpRequest (directly or via $.ajax)
+    var SYNC_URL_RE = /\/storage\/(get|set)\?|\/bookmark\/|\/timecode\//;
+    var syncHold = false;
+    var syncInflight = [];
+
+    // Sync plugins started before this file: their requests bypass the hook. Lampa.Reguest gives up on its own after
+    // 30 s; bookmark.js' raw XHR has no timeout, so a pull hanging longer is not covered
+    var preHookUntil = window.sync_init || window.lampacBookmarkSyncInitialized || window.custom_favs_sync_init
+        ? Date.now() + 30000
+        : 0;
+
+    // After a switch a whole-file write (it replaces the profile's copy on the server) waits for the pull of the same
+    // data: until then the device holds almost nothing of the new profile. Row writes (bookmark add/remove,
+    // timecode set) carry their own row and id and are not held
+    // A switch that did not finish (timeout reload, app killed) leaves the marks at 0 and the data wiped:
+    // the gate stays on after the restart until the pulls land
+    var syncGated = localStorage.getItem('lampac_sync_view') === '0';
+    var syncPulled = {};
+
+    function wholeFileWrite(method, url) {
+        var storage = /\/storage\/set\?(?:.*&)?path=([^&]*)/.exec(url);
+
+        if (method === 'GET') {
+            return '';
+        }
+
+        if (storage && url.indexOf('pathfile=') >= 0) {
+            return 'storage:' + storage[1];
+        }
+
+        return /\/bookmark\/set(\?|$)/.test(url) ? 'bookmark' : '';
+    }
+
+    function syncPull(url) {
+        var storage = /\/storage\/get\?(?:.*&)?path=([^&]*)/.exec(url);
+
+        if (storage) {
+            return 'storage:' + storage[1];
+        }
+
+        return BOOKMARK_PULL_URL_RE.test(url) ? 'bookmark' : '';
+    }
+
+    // Responses of the requests already sent belong to the previous profile: they must not reach their senders
+    function abortSync() {
+        var list = syncInflight;
+
+        syncInflight = [];
+        clearTimeout(favoriteSyncedTimer);
+
+        list.forEach(function (item) {
+            try {
+                // A write already sent still reaches the server under the previous profile; only its answer is dropped
+                if (String(item._method || 'GET').toUpperCase() === 'GET') {
+                    item.abort();
+                } else {
+                    item.onreadystatechange = item.onload = item.onerror = item.onabort = item.ontimeout = null;
+                }
+            } catch (e) { }
+        });
     }
 
     XMLHttpRequest.prototype.send = function (body) {
         var xhr = this;
         var originalOnReadyStateChange = xhr.onreadystatechange;
 
-        xhr.onreadystatechange = function () {
-            var method = xhr._method;
-            var url = xhr._url || '';
+        var syncUrl = String(xhr._url || '');
+        var syncMethod = String(xhr._method || 'GET').toUpperCase();
 
-            // Fallback signal for bookmark.js without the bookmark_importСompleted event (lampac before 28.03.2026)
-            if (xhr.readyState === 4 && method === 'GET' && BOOKMARK_PULL_URL_RE.test(url)) {
+        if (SYNC_URL_RE.test(syncUrl)) {
+            var writeFamily = wholeFileWrite(syncMethod, syncUrl);
+
+            // A request built while the profile is being switched may carry the previous profile's id or data:
+            // it is not sent, the sender gets an ordinary network error. Only sync.js imports retry by themselves; the
+            // rest is pulled again by pullProfile, and local changes go out with the next whole-file export
+            if (syncHold || (syncGated && writeFamily && !syncPulled[writeFamily])) {
+                logger.warning('Sync request held', syncMethod, syncUrl);
+
+                setTimeout(function () {
+                    if (typeof xhr.onerror === 'function') {
+                        xhr.onerror();
+                    }
+                }, 0);
+
+                return;
+            }
+
+            syncInflight = syncInflight.filter(function (item) {
+                return item.readyState < 4;
+            });
+            syncInflight.push(xhr);
+        }
+
+        xhr.onreadystatechange = function () {
+            // Runs before the sender's own handlers, so a write the sender makes from them (sync.js exports
+            // on outFile, bookmark.js seeds an empty server) is already allowed
+            // An answer with success false and a msg other than outFile pulled nothing. The current server sends its
+            // busy answers (semaphore, fileLock) as 502/503 already; this keeps the gate shut if one ever comes as 200
+            var pulled = xhr.readyState === 4 && xhr.status === 200 && syncMethod === 'GET'
+                && !/"success":\s*false,\s*"msg":\s*"(?!outFile")/.test(xhr.responseText) ? syncPull(syncUrl) : '';
+
+            if (pulled) {
+                syncPulled[pulled] = true;
+            }
+
+            // bookmark.js pulled the favorites (its bookmark_importСompleted event also fires on failures)
+            if (pulled === 'bookmark') {
                 markFavoriteSynced();
             }
 
@@ -699,9 +793,6 @@
                             item.profile.selected = true;
                             state.syncProfileId = item.profile.id;
 
-                            Lampa.Storage.set('lampac_profile_id', item.profile.id);
-                            notifySvc.notify(item.profile, 'changed');
-
                             state.profiles
                                 .filter(function (profile) { return profile.id != item.profile.id; })
                                 .forEach(function (profile) { profile.selected = false; });
@@ -711,22 +802,32 @@
                             var switchFn = state.online && state.syncEnabled ? switchOnlineProfile : switchOfflineProfile;
 
                             Lampa.Loading.start();
-                            switchFn(
-                                currentProfile,
-                                item.profile,
-                                function () {
-                                    setTimeout(function () {
-                                        Lampa.Loading.stop();
 
-                                        if (state.isRefreshType('full')) {
-                                            window.location.reload();
-                                            return;
-                                        }
+                            // Answers of requests the hook cannot abort (plugins started before this file) land under
+                            // the previous profile first: the switch waits for them, up to the 30 s Lampa.Reguest timeout
+                            var preHookWait = state.online && state.syncEnabled ? Math.max(0, preHookUntil - Date.now()) : 0;
 
-                                        Lampa.Timeline.read();
-                                        Lampa.Favorite.read();
-                                    }, 100);
-                                });
+                            setTimeout(function () {
+                                self.changeProfile(currentProfile, item.profile, true);
+                                notifySvc.notify(item.profile, 'changed');
+
+                                switchFn(
+                                    currentProfile,
+                                    item.profile,
+                                    function () {
+                                        setTimeout(function () {
+                                            Lampa.Loading.stop();
+
+                                            if (state.isRefreshType('full')) {
+                                                window.location.reload();
+                                                return;
+                                            }
+
+                                            Lampa.Timeline.read();
+                                            Lampa.Favorite.read();
+                                        }, 100);
+                                    });
+                            }, preHookWait);
                         } else {
                             Lampa.Controller.toggle('content');
                         }
@@ -751,26 +852,66 @@
             });
         };
 
-        function switchOnlineProfile(currentProfile, newProfile, refresh) {
-            reset();
+        self.pullProfile = function () {
+            logger.debug('Sync with new profile');
+            window.sync_disable = false;
 
-            if (!ws.connected) {
-                window.location.reload();
+            var event = new CustomEvent('lwsEvent', {
+                detail: { name: 'system', data: ws.connectionEventTypes.RECONNECTED, src: ws.pluginSrc }
+            });
+
+            document.dispatchEvent(event);
+
+            // custom-favs skips the reconnect above (src profiles.js) but pulls on its own sync event
+            document.dispatchEvent(new CustomEvent('lwsEvent', {
+                detail: { name: 'sync_custom_favorite', data: Lampa.Storage.get('lampac_profile_id', ''), src: ws.pluginSrc }
+            }));
+
+            Lampa.Listener.send('lampac', { type: "timecode_pullFromServer" });
+            Lampa.Listener.send('lampac', { name: "bookmark_pullFromServer" });
+        };
+
+        // Wipe first, write the id second, all in one step with sync requests held: nothing sent with the new id
+        // can carry the previous profile's data, nothing answered for the previous profile is applied, and if the app
+        // dies halfway the next start sees "old id, no data", which is simply pulled again
+        self.changeProfile = function (currentProfile, newProfile, wipe) {
+            var offline = !(state.online && state.syncEnabled);
+
+            syncHold = true;
+            syncGated = true;
+            syncPulled = {};
+
+            try {
+                abortSync();
+
+                if (wipe) {
+                    if (offline) {
+                        backupOfflineProfile(currentProfile);
+                    }
+
+                    reset();
+                } else {
+                    // custom-favs wipes its data on lampac_sync_favorite = 0: only the marks go, the local data stays
+                    Lampa.Storage.set('lampac_sync_view', 0);
+                    Lampa.Storage.set('lampac_bookmark_version', '0');
+                    Lampa.Storage.set('lampac_sync_custom_favorite', 0, true);
+                }
+
+                Lampa.Storage.set('lampac_profile_id', newProfile.id);
+
+                if (wipe && offline) {
+                    restoreOfflineProfile(newProfile);
+                }
+            } finally {
+                syncHold = false;
             }
+        };
 
-            setTimeout(function () {
-                logger.debug('Sync with new profile');
-                window.sync_disable = false;
+        function switchOnlineProfile(currentProfile, newProfile, refresh) {
+            setTimeout(self.pullProfile, 50);
 
-                var event = new CustomEvent('lwsEvent', {
-                    detail: { name: 'system', data: ws.connectionEventTypes.RECONNECTED, src: ws.pluginSrc }
-                });
-
-                document.dispatchEvent(event);
-                Lampa.Listener.send('lampac', { type: "timecode_pullFromServer" });
-                Lampa.Listener.send('lampac', { name: "bookmark_pullFromServer" });
-
-            }, 50);
+            // bookmark.js does not retry a failed pull: without this one failure ends in the timeout reload
+            var repull = setInterval(self.pullProfile, 3000);
 
             waiter.wait({
                 interval: state.sync.time.interval,
@@ -787,14 +928,17 @@
                     return synced;
                 },
                 callback: function (synced) {
+                    clearInterval(repull);
                     Lampa.Loading.stop();
 
                     if (!synced) {
                         window.location.reload();
+                        return;
                     }
 
                     var syncedEvent = new CustomEvent('lwsEvent', {
-                        detail: { name: 'profile_synced', data: newProfile.id, src: ws.pluginSrc }
+                        // Through Storage.get, as custom-favs compares it: a digit id comes back as a number
+                        detail: { name: 'profile_synced', data: Lampa.Storage.get('lampac_profile_id', ''), src: ws.pluginSrc }
                     });
 
                     document.dispatchEvent(syncedEvent);
@@ -805,10 +949,6 @@
         }
 
         function switchOfflineProfile(currentProfile, newProfile, refresh) {
-            backupOfflineProfile(currentProfile);
-            reset();
-            restoreOfflineProfile(newProfile);
-
             Lampa.Loading.stop();
             refresh();
         }
@@ -853,15 +993,8 @@
             logger.info('Page has been soft refreshed', activity);
         };
 
-        function reset() {
-            state.sync.keys.forEach(localStorage.removeItem.bind(localStorage));
-            
-            Lampa.Storage.set('file_view', '{}');
-            Lampa.Timeline.read();
-
-            Lampa.Storage.set('favorite', '{}');
-            Lampa.Favorite.read(true);
-
+        // The next pull takes everything the server has for the profile
+        function resetSyncMarks() {
             state.sync.timestamps.forEach(function (timestamp) {
                 Lampa.Storage.set(timestamp, 0);
             });
@@ -869,6 +1002,24 @@
             // lampac after 21.09.2026: one profile's bookmark delta cursor hides another profile's bookmarks,
             // reset it so bookmark.js pulls a full /dump. Older servers do not use these keys
             Lampa.Storage.set('lampac_bookmark_version', '0');
+        }
+
+        function reset() {
+            // Marks first: a switch cut halfway still leaves them at 0, so the next pull restores everything
+            resetSyncMarks();
+
+            // An empty value, not removeItem: Lampa.Storage.get answers from its memory cache
+            // and falls back to its IndexedDB reserve for a missing key
+            state.sync.keys.forEach(function (key) {
+                Lampa.Storage.set(key, '', true);
+            });
+            
+            Lampa.Storage.set('file_view', '{}');
+            Lampa.Timeline.read();
+
+            Lampa.Storage.set('favorite', '{}');
+            Lampa.Favorite.read(true);
+
             Lampa.Storage.set('lampac_timecode_cards', []);
             logger.debug('Profile data has been removed');
         }
@@ -886,13 +1037,27 @@
                 }
             });
 
-            // Primary signal: bookmark.js fires this event after each request, once the response is applied
-            Lampa.Listener.follow('lampac', function (event) {
-                if (lampacEventName(event.name) === 'bookmark_importCompleted'
-                    && BOOKMARK_PULL_PATH_RE.test(event.path || '')) {
-                    markFavoriteSynced();
+            // bookmark.js applies a bookmark event without profile_id on every profile; the server sends none
+            // for profile '0' and for clients without profiles: such an event belongs to the profile-less scope
+            window.addEventListener('lwsEvent', function (event) {
+                var detail = event.detail;
+                var id = String(Lampa.Storage.get('lampac_profile_id', ''));
+                var data;
+
+                if (!detail || detail.name !== 'bookmark' || id === '' || id === '0') {
+                    return;
                 }
-            });
+
+                try {
+                    data = JSON.parse(detail.data);
+                } catch (e) {
+                    return;
+                }
+
+                if (data && !data.profile_id) {
+                    event.stopPropagation();
+                }
+            }, true);
 
             $.ajaxPrefilter(function (options, originalOptions, jqXHR) {
                 if (configured
@@ -1042,13 +1207,41 @@
                     });
 
                     if (!currentProfile) {
+                        var unknownId = state.syncProfileId;
+
                         currentProfile = state.profiles[0];
                         currentProfile.selected = true;
                         state.syncProfileId = currentProfile.id;
-                        Lampa.Storage.set('lampac_profile_id', currentProfile.id);
+
+                        // The profile was removed from the list: its data must not stay under the first one.
+                        // Profiles enabled for the first time (''): the local data stays, the server's copy wins
+                        manager.changeProfile({ id: unknownId }, currentProfile, unknownId !== '');
+
+                        // Sync plugins loaded before profiles.js already sent pulls of the old id that the hook did not
+                        // see. Their answers still land until the new page takes over, so the page is restarted and
+                        // wiped once more on the way out; nothing is sent meanwhile
+                        if (state.online && state.syncEnabled
+                            && localStorage.getItem('lampac_profile_id') === String(currentProfile.id)
+                            && currentProfile.id == Lampa.Storage.get('lampac_profile_id', '')) {
+                            var rewipe = function () {
+                                manager.changeProfile({ id: unknownId }, currentProfile, unknownId !== '');
+                                syncHold = true;
+                            };
+
+                            syncHold = true;
+                            window.addEventListener('pagehide', rewipe);
+                            window.addEventListener('unload', rewipe);
+                            window.location.reload();
+                            return;
+                        }
                     }
 
                     notifySvc.notify(currentProfile, 'changed');
+
+                    // Pulls sent before this file was loaded are not seen by the write gate: pull again so it opens
+                    if (syncGated && state.online && state.syncEnabled) {
+                        setTimeout(manager.pullProfile, 50);
+                    }
 
                     if (state.online && state.syncEnabled && !syncScriptUsed('sync')) {
                         var scriptPath = state.host + '/sync.js';
