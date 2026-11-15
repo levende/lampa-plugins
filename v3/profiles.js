@@ -1227,8 +1227,10 @@
     if (window.appready) {
         setTimeout(function () { new Plugin().start(); }, 500);
     } else {
-        Lampa.Listener.follow('app', function() {
-            setTimeout(function () { new Plugin().start(); }, 500);
+        Lampa.Listener.follow('app', function(e) {
+            if (e.type == 'ready') {
+                setTimeout(function () { new Plugin().start(); }, 500);
+            }
         });
     }
 })();

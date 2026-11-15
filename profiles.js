@@ -12,8 +12,10 @@
     if (window.appready) {
         start();
     } else {
-        Lampa.Listener.follow('app', function() {
-            start();
+        Lampa.Listener.follow('app', function(e) {
+            if (e.type == 'ready') {
+                start();
+            }
         });
     }
 })();
