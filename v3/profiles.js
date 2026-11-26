@@ -63,6 +63,24 @@
         ? Date.now() + 30000
         : 0;
 
+    var bookmarkPreHook = !!window.lampacBookmarkSyncInitialized;
+
+    // bookmark.js pulls through a raw XHR, $.active does not count it. Its pulls run one at a time, so any finished
+    // pull in the resource timing means the one sent before this file is answered too
+    function bookmarkPreHookAnswered() {
+        if (!bookmarkPreHook) {
+            return true;
+        }
+
+        try {
+            return performance.getEntriesByType('resource').some(function (entry) {
+                return BOOKMARK_PULL_URL_RE.test(entry.name);
+            });
+        } catch (e) {
+            return false;
+        }
+    }
+
     // After a switch a whole-file write (it replaces the profile's copy on the server) waits for the pull of the same
     // data: until then the device holds almost nothing of the new profile. Row writes (bookmark add/remove,
     // timecode set) carry their own row and id and are not held
@@ -811,30 +829,39 @@
                             Lampa.Loading.start();
 
                             // Answers of requests the hook cannot abort (plugins started before this file) land under
-                            // the previous profile first: the switch waits for them, up to the 30 s Lampa.Reguest timeout
+                            // the previous profile first: the switch waits for them, up to the 30 s Lampa.Reguest timeout.
+                            // Lampa.Reguest goes through $.ajax, so $.active drops to 0 once they are answered (bookmark.js
+                            // is checked apart): a switch soon after start no longer sits out the whole 30 s
                             var preHookWait = state.online && state.syncEnabled ? Math.max(0, preHookUntil - Date.now()) : 0;
 
-                            setTimeout(function () {
-                                self.changeProfile(currentProfile, item.profile, true);
-                                notifySvc.notify(item.profile, 'changed');
+                            waiter.wait({
+                                interval: 100,
+                                timeout: preHookWait,
+                                conditionFn: function () {
+                                    return !$.active && bookmarkPreHookAnswered();
+                                },
+                                callback: function () {
+                                    self.changeProfile(currentProfile, item.profile, true);
+                                    notifySvc.notify(item.profile, 'changed');
 
-                                switchFn(
-                                    currentProfile,
-                                    item.profile,
-                                    function () {
-                                        setTimeout(function () {
-                                            Lampa.Loading.stop();
+                                    switchFn(
+                                        currentProfile,
+                                        item.profile,
+                                        function () {
+                                            setTimeout(function () {
+                                                Lampa.Loading.stop();
 
-                                            if (state.isRefreshType('full')) {
-                                                window.location.reload();
-                                                return;
-                                            }
+                                                if (state.isRefreshType('full')) {
+                                                    window.location.reload();
+                                                    return;
+                                                }
 
-                                            Lampa.Timeline.read();
-                                            Lampa.Favorite.read();
-                                        }, 100);
-                                    });
-                            }, preHookWait);
+                                                Lampa.Timeline.read();
+                                                Lampa.Favorite.read();
+                                            }, 100);
+                                        });
+                                }
+                            });
                         } else {
                             Lampa.Controller.toggle('content');
                         }
